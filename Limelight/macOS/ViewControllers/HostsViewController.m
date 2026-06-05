@@ -738,7 +738,7 @@
     NSString *msg = message.lowercaseString ?: @"";
     NSArray<NSString *> *tokens = @[
         @"timeout", @"timed out", @"network", @"disconnected", @"connection",
-        @"请求超时", @"网络连接已中断", @"无法连接"
+        @"request timed out", @"network connection interrupted", @"could not connect"
     ];
     for (NSString *token in tokens) {
         if ([msg containsString:token]) {

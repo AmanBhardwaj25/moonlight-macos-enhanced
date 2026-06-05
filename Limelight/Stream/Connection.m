@@ -494,7 +494,7 @@ static UInt32 MLDefaultOutputTransportType(void) {
 static BOOL MLDefaultOutputLooksLikeHeadphones(NSString *deviceName, UInt32 transportType, int channelCount) {
     NSString *normalized = deviceName.lowercaseString ?: @"";
     NSArray<NSString *> *headphoneHints = @[
-        @"airpods", @"headphone", @"headset", @"earbud", @"耳机", @"buds", @"qc ", @"wh-", @"wf-"
+        @"airpods", @"headphone", @"headset", @"earbud", @"buds", @"qc ", @"wh-", @"wf-"
     ];
     for (NSString *hint in headphoneHints) {
         if ([normalized containsString:hint]) {
@@ -503,7 +503,7 @@ static BOOL MLDefaultOutputLooksLikeHeadphones(NSString *deviceName, UInt32 tran
     }
 
     NSArray<NSString *> *speakerHints = @[
-        @"speaker", @"display", @"monitor", @"hdmi", @"tv", @"studio display", @"homepod", @"音箱"
+        @"speaker", @"display", @"monitor", @"hdmi", @"tv", @"studio display", @"homepod"
     ];
     for (NSString *hint in speakerHints) {
         if ([normalized containsString:hint]) {

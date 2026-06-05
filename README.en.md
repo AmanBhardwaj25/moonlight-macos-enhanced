@@ -8,7 +8,7 @@
 
 `Moonlight macOS Enhanced` is a native macOS streaming client for Sunshine, Foundation Sunshine, and compatible GameStream hosts. It is built with AppKit / SwiftUI and continuously tuned for both Apple Silicon and Intel Macs.
 
-[简体中文](README.md) | English
+English
 
 </div>
 
@@ -16,7 +16,7 @@
 
 ## ✨ Core Capabilities
 
-- **Native macOS client** — AppKit / SwiftUI interface, Apple Silicon and Intel support, dark mode, and bilingual UI
+- **Native macOS client** — AppKit / SwiftUI interface, Apple Silicon and Intel support, dark mode, and English UI
 - **Full streaming feature set** — custom resolution and FPS, AV1 / HEVC / H.264 decode, HDR, YUV 4:4:4, MetalFX / VT enhancement, and auto bitrate
 - **Multiple video renderers** — includes `Native Renderer`, `Metal Renderer`, and `Compatibility Renderer`; `Native Renderer` is the recommended default, while `Metal Renderer` provides deeper HDR and color controls
 - **Clipboard support** — when paired with Foundation Sunshine, Moonlight supports bidirectional copy and paste for text and single-image items, with stream-window focus deciding which session owns clipboard sync
@@ -208,7 +208,7 @@ For input / wheel / mouse bugs, it is especially helpful to include:
 ## 🤝 Contributing
 
 PRs are welcome. Please try to:
-- Keep Chinese and English user-facing copy in sync
+- Keep user-facing copy clear and consistent
 - Test the core streaming and input paths before submitting
 - Write PR descriptions in user-facing language instead of just pasting commit titles
 

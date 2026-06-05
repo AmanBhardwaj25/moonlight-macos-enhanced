@@ -924,10 +924,10 @@
 
 - (NSString *)currentStreamHealthBadgeText {
     if (self.streamHealthNoPayloadStreak > 0) {
-        return [NSString stringWithFormat:@"卡住%lus", (unsigned long)self.streamHealthNoPayloadStreak];
+        return [NSString stringWithFormat:@"Stalled %lus", (unsigned long)self.streamHealthNoPayloadStreak];
     }
     if (self.streamHealthHighDropStreak >= 2) {
-        return @"高丢包";
+        return @"High Loss";
     }
     return MLString(@"Control Center", nil);
 }
@@ -1265,7 +1265,7 @@
         }
     };
 
-    // 一级顶部：鼠标模式
+    // Top level: mouse mode
     NSDictionary *prefs = [SettingsClass getSettingsFor:self.app.host.uuid];
     NSString *mouseMode = [SettingsClass mouseModeFor:self.app.host.uuid];
     BOOL isRemoteMode = [mouseMode isEqualToString:@"remote"];
@@ -1327,8 +1327,8 @@
     mouseModeItem.submenu = mouseModeMenu;
     [self.streamMenu addItem:mouseModeItem];
 
-    // 一级顶部：重连
-    NSMenuItem *reconnectItem = [[NSMenuItem alloc] initWithTitle:@"重连" action:@selector(reconnectFromMenu:) keyEquivalent:@""];
+    // Top level: reconnect
+    NSMenuItem *reconnectItem = [[NSMenuItem alloc] initWithTitle:@"Reconnect" action:@selector(reconnectFromMenu:) keyEquivalent:@""];
     [self applyShortcut:[self streamShortcutForAction:MLShortcutActionReconnectStream] toMenuItem:reconnectItem];
     reconnectItem.target = self;
     setSymbol(reconnectItem, @"arrow.triangle.2.circlepath");
@@ -1338,29 +1338,29 @@
 
     // NSDictionary *prefs = [SettingsClass getSettingsFor:self.app.host.uuid]; // Already defined above
 
-    // 二级：窗口
-    NSMenuItem *windowItem = [[NSMenuItem alloc] initWithTitle:@"窗口" action:nil keyEquivalent:@""];
+    // Second level: window
+    NSMenuItem *windowItem = [[NSMenuItem alloc] initWithTitle:@"Window" action:nil keyEquivalent:@""];
     setSymbol(windowItem, @"macwindow");
-    NSMenu *windowMenu = [[NSMenu alloc] initWithTitle:@"窗口"]; 
+    NSMenu *windowMenu = [[NSMenu alloc] initWithTitle:@"Window"];
 
     BOOL isFullscreen = [self isWindowFullscreen];
     BOOL isBorderless = ((self.view.window.styleMask & NSWindowStyleMaskTitled) == 0) && !isFullscreen;
     BOOL isWindowed = !isFullscreen && !isBorderless;
 
-    NSMenuItem *windowedItem = [[NSMenuItem alloc] initWithTitle:@"窗口模式" action:@selector(switchToWindowedMode:) keyEquivalent:@""];
+    NSMenuItem *windowedItem = [[NSMenuItem alloc] initWithTitle:@"Windowed" action:@selector(switchToWindowedMode:) keyEquivalent:@""];
     windowedItem.target = self;
     windowedItem.state = isWindowed ? NSControlStateValueOn : NSControlStateValueOff;
     setSymbol(windowedItem, @"macwindow");
     [windowMenu addItem:windowedItem];
 
-    NSMenuItem *fullscreenItem = [[NSMenuItem alloc] initWithTitle:@"全屏模式" action:@selector(switchToFullscreenMode:) keyEquivalent:@"f"];
+    NSMenuItem *fullscreenItem = [[NSMenuItem alloc] initWithTitle:@"Fullscreen" action:@selector(switchToFullscreenMode:) keyEquivalent:@"f"];
     fullscreenItem.keyEquivalentModifierMask = NSEventModifierFlagControl | NSEventModifierFlagCommand;
     fullscreenItem.target = self;
     fullscreenItem.state = isFullscreen ? NSControlStateValueOn : NSControlStateValueOff;
     setSymbol(fullscreenItem, @"arrow.up.left.and.arrow.down.right");
     [windowMenu addItem:fullscreenItem];
 
-    NSMenuItem *borderlessItem = [[NSMenuItem alloc] initWithTitle:@"无边框窗口" action:@selector(switchToBorderlessMode:) keyEquivalent:@""];
+    NSMenuItem *borderlessItem = [[NSMenuItem alloc] initWithTitle:@"Borderless Windowed" action:@selector(switchToBorderlessMode:) keyEquivalent:@""];
     borderlessItem.target = self;
     borderlessItem.state = isBorderless ? NSControlStateValueOn : NSControlStateValueOff;
     setSymbol(borderlessItem, @"rectangle.dashed");
@@ -1368,7 +1368,7 @@
 
     [windowMenu addItem:[NSMenuItem separatorItem]];
 
-    NSMenuItem *toggleBallItem = [[NSMenuItem alloc] initWithTitle:@"全屏显示悬浮球" action:@selector(toggleFullscreenControlBallFromMenu:) keyEquivalent:@""];
+    NSMenuItem *toggleBallItem = [[NSMenuItem alloc] initWithTitle:@"Show Fullscreen Control Ball" action:@selector(toggleFullscreenControlBallFromMenu:) keyEquivalent:@""];
     [self applyShortcut:[self streamShortcutForAction:MLShortcutActionToggleFullscreenControlBall] toMenuItem:toggleBallItem];
     toggleBallItem.target = self;
     toggleBallItem.state = self.hideFullscreenControlBall ? NSControlStateValueOff : NSControlStateValueOn;
@@ -1377,7 +1377,7 @@
 
     [windowMenu addItem:[NSMenuItem separatorItem]];
 
-    NSMenuItem *detailsItem = [[NSMenuItem alloc] initWithTitle:@"连接详情" action:@selector(toggleOverlay) keyEquivalent:@""];
+    NSMenuItem *detailsItem = [[NSMenuItem alloc] initWithTitle:@"Connection Details" action:@selector(toggleOverlay) keyEquivalent:@""];
     [self applyShortcut:[self streamShortcutForAction:MLShortcutActionTogglePerformanceOverlay] toMenuItem:detailsItem];
     detailsItem.target = self;
     detailsItem.state = self.overlayContainer ? NSControlStateValueOn : NSControlStateValueOff;
@@ -1387,10 +1387,10 @@
     windowItem.submenu = windowMenu;
     [self.streamMenu addItem:windowItem];
 
-    // 二级：屏幕（分辨率/帧率）
-    NSMenuItem *monitorItem = [[NSMenuItem alloc] initWithTitle:@"屏幕" action:nil keyEquivalent:@""];
+    // Second level: display (resolution/FPS)
+    NSMenuItem *monitorItem = [[NSMenuItem alloc] initWithTitle:@"Display" action:nil keyEquivalent:@""];
     setSymbol(monitorItem, @"display");
-    NSMenu *monitorMenu = [[NSMenu alloc] initWithTitle:@"屏幕"];
+    NSMenu *monitorMenu = [[NSMenu alloc] initWithTitle:@"Display"];
 
     // 1. Follow Monitor
     CGSize refreshLocalSize = CGSizeZero;
@@ -1399,15 +1399,15 @@
         CGFloat scale = [self.view.window screen].backingScaleFactor;
         refreshLocalSize = CGSizeMake(screenFrame.size.width * scale, screenFrame.size.height * scale);
     }
-    
-    NSString *matchDisplayTitle = @"跟随显示器";
+
+    NSString *matchDisplayTitle = @"Match Display";
     if (refreshLocalSize.width > 0 && refreshLocalSize.height > 0) {
-        matchDisplayTitle = [NSString stringWithFormat:@"跟随显示器 (%.0fx%.0f)", refreshLocalSize.width, refreshLocalSize.height];
+        matchDisplayTitle = [NSString stringWithFormat:@"Match Display (%.0fx%.0f)", refreshLocalSize.width, refreshLocalSize.height];
     }
 
     NSMenuItem *matchDisplayItem = [[NSMenuItem alloc] initWithTitle:matchDisplayTitle action:@selector(selectMatchDisplayFromMenu:) keyEquivalent:@""];
     matchDisplayItem.target = self;
-    
+
     NSDictionary *currentPrefs = [SettingsClass getSettingsFor:self.app.host.uuid];
     BOOL isMatchDisplay = currentPrefs ? [currentPrefs[@"matchDisplayResolution"] boolValue] : NO;
     matchDisplayItem.state = isMatchDisplay ? NSControlStateValueOn : NSControlStateValueOff;
@@ -1416,7 +1416,7 @@
     [monitorMenu addItem:matchDisplayItem];
 
     struct Resolution currentRes = [self.class getResolution];
-    
+
     int currentFps = 0;
     if (prefs) {
         int rawFps = [prefs[@"fps"] intValue];
@@ -1435,9 +1435,9 @@
     BOOL isMatchHost = (!isMatchDisplay && currentRes.width == 0 && currentRes.height == 0);
 
     [monitorMenu addItem:[NSMenuItem separatorItem]];
-    
+
     // 3. Custom
-    NSMenuItem *customItem = [[NSMenuItem alloc] initWithTitle:@"自定义..." action:@selector(selectCustomResolutionFromMenu:) keyEquivalent:@""];
+    NSMenuItem *customItem = [[NSMenuItem alloc] initWithTitle:@"Custom..." action:@selector(selectCustomResolutionFromMenu:) keyEquivalent:@""];
     customItem.target = self;
     setSymbol(customItem, @"slider.horizontal.below.rectangle");
     [monitorMenu addItem:customItem];
@@ -1460,21 +1460,21 @@
         if ((int)size.width == currentRes.width && (int)size.height == currentRes.height) {
             currentIsStandard = YES;
         }
-        
+
         NSString *title = [NSString stringWithFormat:@"%.0f x %.0f", size.width, size.height];
         NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:title action:@selector(selectResolutionFromMenu:) keyEquivalent:@""];
         item.target = self;
         item.representedObject = val;
-        
+
         BOOL selected = (!isMatchDisplay && !isMatchHost && currentRes.width == (int)size.width && currentRes.height == (int)size.height);
         item.state = selected ? NSControlStateValueOn : NSControlStateValueOff;
-        
+
         [monitorMenu addItem:item];
     }
-    
+
     // If current is NOT Follow Monitor, NOT Follow Host, and NOT Standard, we display it as "Effective Custom"
     if (!isMatchDisplay && !isMatchHost && !currentIsStandard) {
-        NSString *customTitle = [NSString stringWithFormat:@"当前 (自定义): %dx%d", currentRes.width, currentRes.height];
+        NSString *customTitle = [NSString stringWithFormat:@"Current (Custom): %dx%d", currentRes.width, currentRes.height];
         NSMenuItem *currentItem = [[NSMenuItem alloc] initWithTitle:customTitle action:nil keyEquivalent:@""];
         currentItem.state = NSControlStateValueOn;
         [monitorMenu addItem:currentItem];
@@ -1483,28 +1483,28 @@
     [monitorMenu addItem:[NSMenuItem separatorItem]];
 
     // 5. Frame Rate Submenu
-    NSMenuItem *fpsSubItem = [[NSMenuItem alloc] initWithTitle:@"帧率" action:nil keyEquivalent:@""];
-    NSMenu *fpsSubMenu = [[NSMenu alloc] initWithTitle:@"帧率"];
-    
+    NSMenuItem *fpsSubItem = [[NSMenuItem alloc] initWithTitle:@"Frame Rate" action:nil keyEquivalent:@""];
+    NSMenu *fpsSubMenu = [[NSMenu alloc] initWithTitle:@"Frame Rate"];
+
     NSArray<NSNumber *> *fpsOptions = @[ @30, @60, @90, @120, @144 ];
     BOOL currentFpsIsStandard = NO;
     for (NSNumber *fps in fpsOptions) {
         if (currentFps == fps.intValue) currentFpsIsStandard = YES;
-        
+
         NSString *title = [NSString stringWithFormat:@"%@ FPS", fps];
         NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:title action:@selector(selectFrameRateFromMenu:) keyEquivalent:@""];
         item.target = self;
         item.representedObject = fps;
-        
+
         BOOL selected = (currentFps == fps.intValue);
         item.state = selected ? NSControlStateValueOn : NSControlStateValueOff;
-        
+
         [fpsSubMenu addItem:item];
     }
-    
+
     // If FPS is weird (custom), show it
     if (!currentFpsIsStandard) {
-         NSString *title = [NSString stringWithFormat:@"当前: %d FPS", currentFps];
+         NSString *title = [NSString stringWithFormat:@"Current: %d FPS", currentFps];
          NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:title action:nil keyEquivalent:@""];
          item.state = NSControlStateValueOn;
          [fpsSubMenu addItem:item];
@@ -1512,22 +1512,22 @@
 
     [fpsSubMenu addItem:[NSMenuItem separatorItem]];
 
-    NSMenuItem *customFpsItem = [[NSMenuItem alloc] initWithTitle:@"自定义..." action:@selector(selectCustomFpsFromMenu:) keyEquivalent:@""];
+    NSMenuItem *customFpsItem = [[NSMenuItem alloc] initWithTitle:@"Custom..." action:@selector(selectCustomFpsFromMenu:) keyEquivalent:@""];
     customFpsItem.target = self;
     [fpsSubMenu addItem:customFpsItem];
-    
+
     fpsSubItem.submenu = fpsSubMenu;
     [monitorMenu addItem:fpsSubItem];
 
     monitorItem.submenu = monitorMenu;
     [self.streamMenu addItem:monitorItem];
 
-    // 二级：画质（码率）
-    NSMenuItem *qualityItem = [[NSMenuItem alloc] initWithTitle:@"画质" action:nil keyEquivalent:@""];
+    // Second level: quality (bitrate)
+    NSMenuItem *qualityItem = [[NSMenuItem alloc] initWithTitle:@"Quality" action:nil keyEquivalent:@""];
     setSymbol(qualityItem, @"sparkles");
-    NSMenu *qualityMenu = [[NSMenu alloc] initWithTitle:@"画质"];
+    NSMenu *qualityMenu = [[NSMenu alloc] initWithTitle:@"Quality"];
 
-    NSMenuItem *bitrateHeader = [[NSMenuItem alloc] initWithTitle:@"码率" action:nil keyEquivalent:@""];
+    NSMenuItem *bitrateHeader = [[NSMenuItem alloc] initWithTitle:@"Bitrate" action:nil keyEquivalent:@""];
     bitrateHeader.enabled = NO;
     [qualityMenu addItem:bitrateHeader];
 
@@ -1536,7 +1536,7 @@
     NSNumber *fallbackBitrate = prefs[@"bitrate"]; // Kbps
     NSInteger selectedKbps = customBitrate ? customBitrate.integerValue : (fallbackBitrate ? fallbackBitrate.integerValue : 0);
 
-    NSMenuItem *autoBitrateItem = [[NSMenuItem alloc] initWithTitle:@"自动" action:@selector(selectBitrateFromMenu:) keyEquivalent:@""];
+    NSMenuItem *autoBitrateItem = [[NSMenuItem alloc] initWithTitle:@"Automatic" action:@selector(selectBitrateFromMenu:) keyEquivalent:@""];
     autoBitrateItem.target = self;
     autoBitrateItem.representedObject = @"auto";
     autoBitrateItem.state = autoAdjust ? NSControlStateValueOn : NSControlStateValueOff;
@@ -1560,20 +1560,20 @@
 
     [qualityMenu addItem:[NSMenuItem separatorItem]];
 
-    // 自定义选项（三级菜单，悬停展开滑块和输入框）
+    // Custom options (third-level menu with slider and input)
     BOOL isCustomMode = !autoAdjust && !isPresetSelected && selectedKbps > 0;
 
-    NSMenuItem *customBitrateItem = [[NSMenuItem alloc] initWithTitle:@"自定义" action:nil keyEquivalent:@""];
+    NSMenuItem *customBitrateItem = [[NSMenuItem alloc] initWithTitle:@"Custom" action:nil keyEquivalent:@""];
     customBitrateItem.state = isCustomMode ? NSControlStateValueOn : NSControlStateValueOff;
     setSymbol(customBitrateItem, @"slider.horizontal.3");
 
-    // 三级菜单：自定义码率
-    NSMenu *customMenu = [[NSMenu alloc] initWithTitle:@"自定义"];
+    // Third-level menu: custom bitrate
+    NSMenu *customMenu = [[NSMenu alloc] initWithTitle:@"Custom"];
 
-    // 滑块视图
+    // Slider view
     NSView *bitrateView = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 280, 70)];
 
-    // 标题行
+    // Title row
     NSTextField *bitrateLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(16, 46, 60, 16)];
     bitrateLabel.bezeled = NO;
     bitrateLabel.drawsBackground = NO;
@@ -1581,10 +1581,10 @@
     bitrateLabel.selectable = NO;
     bitrateLabel.font = [NSFont systemFontOfSize:12 weight:NSFontWeightMedium];
     bitrateLabel.textColor = [NSColor labelColor];
-    bitrateLabel.stringValue = @"码率";
+    bitrateLabel.stringValue = @"Bitrate";
     [bitrateView addSubview:bitrateLabel];
 
-    // 当前码率值显示（右侧）
+    // Current bitrate value display (right side)
     self.menuBitrateValueLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(200, 46, 64, 16)];
     self.menuBitrateValueLabel.bezeled = NO;
     self.menuBitrateValueLabel.drawsBackground = NO;
@@ -1602,17 +1602,17 @@
     }
     [bitrateView addSubview:self.menuBitrateValueLabel];
 
-    // 码率滑杆
+    // Bitrate slider
     self.menuBitrateSlider = [[NSSlider alloc] initWithFrame:NSMakeRect(16, 24, 248, 20)];
     self.menuBitrateSlider.minValue = 0.0;
-    self.menuBitrateSlider.maxValue = 27.0; // bitrateSteps 数组长度 - 1
+    self.menuBitrateSlider.maxValue = 27.0; // bitrateSteps array length - 1
     self.menuBitrateSlider.target = self;
     self.menuBitrateSlider.action = @selector(handleBitrateSliderChanged:);
     self.menuBitrateSlider.continuous = YES;
     [self updateBitrateSliderPosition:displayKbps];
     [bitrateView addSubview:self.menuBitrateSlider];
 
-    // 手动输入框
+    // Manual input field
     NSTextField *inputField = [[NSTextField alloc] initWithFrame:NSMakeRect(16, 2, 60, 20)];
     inputField.bezeled = YES;
     inputField.bezelStyle = NSTextFieldRoundedBezel;
@@ -1624,7 +1624,7 @@
     inputField.stringValue = [NSString stringWithFormat:@"%.0f", mbpsValue];
     inputField.target = self;
     inputField.action = @selector(handleBitrateInputChanged:);
-    inputField.tag = 1001; // 用于识别
+    inputField.tag = 1001; // identifier
     [bitrateView addSubview:inputField];
 
     NSTextField *inputSuffix = [[NSTextField alloc] initWithFrame:NSMakeRect(80, 4, 40, 16)];
@@ -1637,10 +1637,10 @@
     inputSuffix.stringValue = @"Mbps";
     [bitrateView addSubview:inputSuffix];
 
-    // 应用按钮
+    // Apply button
     NSButton *applyButton = [[NSButton alloc] initWithFrame:NSMakeRect(200, 2, 64, 20)];
     applyButton.bezelStyle = NSBezelStyleRecessed;
-    applyButton.title = @"应用";
+    applyButton.title = @"Apply";
     applyButton.target = self;
     applyButton.action = @selector(handleBitrateApplyClicked:);
     applyButton.font = [NSFont systemFontOfSize:11 weight:NSFontWeightMedium];
@@ -1656,10 +1656,10 @@
     qualityItem.submenu = qualityMenu;
     [self.streamMenu addItem:qualityItem];
 
-    // 二级：声音（音量滑杆）
-    NSMenuItem *audioItem = [[NSMenuItem alloc] initWithTitle:@"声音" action:nil keyEquivalent:@""];
+    // Second level: audio (volume slider)
+    NSMenuItem *audioItem = [[NSMenuItem alloc] initWithTitle:@"Audio" action:nil keyEquivalent:@""];
     setSymbol(audioItem, @"speaker.wave.2");
-    NSMenu *audioMenu = [[NSMenu alloc] initWithTitle:@"声音"]; 
+    NSMenu *audioMenu = [[NSMenu alloc] initWithTitle:@"Audio"];
 
     NSView *volView = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 240, 28)];
     NSTextField *volLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(10, 6, 42, 16)];
@@ -1669,7 +1669,7 @@
     volLabel.selectable = NO;
     volLabel.font = [NSFont systemFontOfSize:12 weight:NSFontWeightRegular];
     volLabel.textColor = [NSColor labelColor];
-    volLabel.stringValue = @"音量";
+    volLabel.stringValue = @"Volume";
     [volView addSubview:volLabel];
 
     if (!self.menuVolumeSlider) {
@@ -1690,13 +1690,13 @@
     audioItem.submenu = audioMenu;
     [self.streamMenu addItem:audioItem];
 
-    // 二级：网络（连接方式）
-    NSMenuItem *networkItem = [[NSMenuItem alloc] initWithTitle:@"网络" action:nil keyEquivalent:@""];
+    // Second level: network (connection method)
+    NSMenuItem *networkItem = [[NSMenuItem alloc] initWithTitle:@"Network" action:nil keyEquivalent:@""];
     setSymbol(networkItem, @"network");
-    NSMenu *networkMenu = [[NSMenu alloc] initWithTitle:@"网络"]; 
+    NSMenu *networkMenu = [[NSMenu alloc] initWithTitle:@"Network"];
 
     NSString *method = prefs[@"connectionMethod"] ?: @"Auto";
-    NSMenuItem *autoItem = [[NSMenuItem alloc] initWithTitle:@"自动" action:@selector(selectConnectionMethodFromMenu:) keyEquivalent:@""];
+    NSMenuItem *autoItem = [[NSMenuItem alloc] initWithTitle:@"Automatic" action:@selector(selectConnectionMethodFromMenu:) keyEquivalent:@""];
     autoItem.target = self;
     autoItem.representedObject = @"Auto";
     autoItem.state = [method isEqualToString:@"Auto"] ? NSControlStateValueOn : NSControlStateValueOff;
@@ -1725,18 +1725,18 @@
     networkItem.submenu = networkMenu;
     [self.streamMenu addItem:networkItem];
 
-    // 二级：日志（显示/复制）
-    NSMenuItem *logsItem = [[NSMenuItem alloc] initWithTitle:@"日志" action:nil keyEquivalent:@""];
+    // Second level: logs (show/copy)
+    NSMenuItem *logsItem = [[NSMenuItem alloc] initWithTitle:@"Logs" action:nil keyEquivalent:@""];
     setSymbol(logsItem, @"text.justify.left");
-    NSMenu *logsMenu = [[NSMenu alloc] initWithTitle:@"日志"]; 
+    NSMenu *logsMenu = [[NSMenu alloc] initWithTitle:@"Logs"];
 
-    NSMenuItem *toggleLogsItem = [[NSMenuItem alloc] initWithTitle:@"显示日志" action:@selector(toggleLogOverlayFromMenu:) keyEquivalent:@""];
+    NSMenuItem *toggleLogsItem = [[NSMenuItem alloc] initWithTitle:@"Show Logs" action:@selector(toggleLogOverlayFromMenu:) keyEquivalent:@""];
     toggleLogsItem.target = self;
     toggleLogsItem.state = self.logOverlayContainer ? NSControlStateValueOn : NSControlStateValueOff;
     setSymbol(toggleLogsItem, @"text.justify.left");
     [logsMenu addItem:toggleLogsItem];
 
-    NSMenuItem *copyLogsItem = [[NSMenuItem alloc] initWithTitle:@"复制日志" action:@selector(copyLogsFromMenu:) keyEquivalent:@""];
+    NSMenuItem *copyLogsItem = [[NSMenuItem alloc] initWithTitle:@"Copy Logs" action:@selector(copyLogsFromMenu:) keyEquivalent:@""];
     copyLogsItem.target = self;
     setSymbol(copyLogsItem, @"doc.on.doc");
     [logsMenu addItem:copyLogsItem];
@@ -1744,12 +1744,12 @@
     logsItem.submenu = logsMenu;
     [self.streamMenu addItem:logsItem];
 
-    // 二级：更多（把重连/退出放底部）
-    NSMenuItem *moreItem = [[NSMenuItem alloc] initWithTitle:@"更多" action:nil keyEquivalent:@""];
+    // Second level: more (put reconnect/exit at the bottom)
+    NSMenuItem *moreItem = [[NSMenuItem alloc] initWithTitle:@"More" action:nil keyEquivalent:@""];
     setSymbol(moreItem, @"ellipsis.circle");
-    NSMenu *moreMenu = [[NSMenu alloc] initWithTitle:@"更多"]; 
+    NSMenu *moreMenu = [[NSMenu alloc] initWithTitle:@"More"];
 
-    NSMenuItem *quitItem = [[NSMenuItem alloc] initWithTitle:@"关闭并退出应用" action:@selector(performCloseAndQuitApp:) keyEquivalent:@""];
+    NSMenuItem *quitItem = [[NSMenuItem alloc] initWithTitle:@"Close and Quit App" action:@selector(performCloseAndQuitApp:) keyEquivalent:@""];
     [self applyShortcut:[self streamShortcutForAction:MLShortcutActionCloseAndQuitApp] toMenuItem:quitItem];
     quitItem.target = self;
     setSymbol(quitItem, @"power");
@@ -1758,9 +1758,9 @@
     moreItem.submenu = moreMenu;
     [self.streamMenu addItem:moreItem];
 
-    // 一级底部：退出
+    // Top-level bottom: exit
     [self.streamMenu addItem:[NSMenuItem separatorItem]];
-    NSMenuItem *disconnectItem = [[NSMenuItem alloc] initWithTitle:@"退出串流" action:@selector(performCloseStreamWindow:) keyEquivalent:@""];
+    NSMenuItem *disconnectItem = [[NSMenuItem alloc] initWithTitle:@"Disconnect Stream" action:@selector(performCloseStreamWindow:) keyEquivalent:@""];
     [self applyShortcut:[self streamShortcutForAction:MLShortcutActionDisconnectStream] toMenuItem:disconnectItem];
     disconnectItem.target = self;
     setSymbol(disconnectItem, @"xmark.circle");
@@ -1780,7 +1780,7 @@
 }
 
 - (void)reconnectFromMenu:(id)sender {
-    [self attemptReconnectWithReason:@"menu"]; 
+    [self attemptReconnectWithReason:@"menu"];
 }
 
 - (void)selectConnectionMethodFromMenu:(NSMenuItem *)sender {
@@ -1798,51 +1798,51 @@
     [SettingsClass setConnectionMethod:method for:self.app.host.uuid];
     [self updateWindowSubtitle];
     [SettingsClass loadMoonlightSettingsFor:self.app.host.uuid];
-    [self attemptReconnectWithReason:@"connection-method-changed"]; 
+    [self attemptReconnectWithReason:@"connection-method-changed"];
 }
 
 - (void)selectFollowHostFromMenu:(id)sender {
     // 0x0 resolution and 0 FPS usually signals "Native" or "Default" to the core library.
     // We treat this as "Follow Host".
     [SettingsClass setCustomResolution:0 :0 :0 for:self.app.host.uuid];
-    
+
     [SettingsClass loadMoonlightSettingsFor:self.app.host.uuid];
     [self attemptReconnectWithReason:@"resolution-changed"];
 }
 
 - (void)selectCustomResolutionFromMenu:(id)sender {
     NSAlert *alert = [[NSAlert alloc] init];
-    alert.messageText = @"自定义分辨率与帧率";
-    alert.informativeText = @"请输入期望的分辨率（宽 x 高）和帧率（FPS）。\n设置为 0 代表由服务端决定（不建议）。";
-    [alert addButtonWithTitle:@"确定"];
-    [alert addButtonWithTitle:@"取消"];
-    
+    alert.messageText = @"Custom Resolution and Frame Rate";
+    alert.informativeText = @"Enter the desired resolution (width x height) and frame rate (FPS).\nSet to 0 to let the server decide (not recommended).";
+    [alert addButtonWithTitle:@"OK"];
+    [alert addButtonWithTitle:@"Cancel"];
+
     NSView *container = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 200, 100)];
-    
+
     // Width
     NSTextField *widthLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(0, 75, 50, 20)];
-    widthLabel.stringValue = @"宽:";
+    widthLabel.stringValue = @"Width:";
     widthLabel.bezeled = NO;
     widthLabel.drawsBackground = NO;
     widthLabel.alignment = NSTextAlignmentRight;
     [container addSubview:widthLabel];
-    
+
     NSTextField *widthField = [[NSTextField alloc] initWithFrame:NSMakeRect(55, 75, 60, 22)];
     widthField.placeholderString = @"1920";
     [container addSubview:widthField];
-    
+
     // Height
     NSTextField *heightLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(0, 45, 50, 20)];
-    heightLabel.stringValue = @"高:";
+    heightLabel.stringValue = @"Height:";
     heightLabel.bezeled = NO;
     heightLabel.drawsBackground = NO;
     heightLabel.alignment = NSTextAlignmentRight;
     [container addSubview:heightLabel];
-    
+
     NSTextField *heightField = [[NSTextField alloc] initWithFrame:NSMakeRect(55, 45, 60, 22)];
     heightField.placeholderString = @"1080";
     [container addSubview:heightField];
-    
+
     // FPS
     NSTextField *fpsLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(0, 15, 50, 20)];
     fpsLabel.stringValue = @"FPS:";
@@ -1850,33 +1850,33 @@
     fpsLabel.drawsBackground = NO;
     fpsLabel.alignment = NSTextAlignmentRight;
     [container addSubview:fpsLabel];
-    
+
     NSTextField *fpsField = [[NSTextField alloc] initWithFrame:NSMakeRect(55, 15, 60, 22)];
     fpsField.placeholderString = @"60";
     [container addSubview:fpsField];
-    
+
     // Pre-fill with current
     struct Resolution res = [self.class getResolution];
     TemporarySettings *tempSettings = [[DataManager alloc] getSettings];
     int currentFps = [tempSettings.framerate intValue];
-    
+
     if (res.width > 0) widthField.intValue = res.width;
     if (res.height > 0) heightField.intValue = res.height;
     if (currentFps > 0) fpsField.intValue = currentFps;
-    
+
     alert.accessoryView = container;
-    
+
     [alert beginSheetModalForWindow:self.view.window completionHandler:^(NSModalResponse returnCode) {
         if (returnCode == NSAlertFirstButtonReturn) {
             int w = widthField.intValue;
             int h = heightField.intValue;
             int f = fpsField.intValue;
-            
+
             // Basic validation
             if (w < 0) w = 0;
             if (h < 0) h = 0;
             if (f < 0) f = 0;
-            
+
             [SettingsClass setCustomResolution:w :h :f for:self.app.host.uuid];
             [SettingsClass loadMoonlightSettingsFor:self.app.host.uuid];
             [self attemptReconnectWithReason:@"custom-resolution"];
@@ -1890,14 +1890,14 @@
     if (currentMatch) {
          return;
     }
-    
+
     // Switch to match display
     // We need current FPS because setResolutionAndFps requires it.
     TemporarySettings *tempSettings = [[DataManager alloc] getSettings];
     int currentFps = [tempSettings.framerate intValue];
 
     [SettingsClass setResolutionAndFps:0 :0 :currentFps matchDisplay:YES for:self.app.host.uuid];
-    
+
     [SettingsClass loadMoonlightSettingsFor:self.app.host.uuid];
     [self attemptReconnectWithReason:@"resolution-changed"];
 }
@@ -1906,7 +1906,7 @@
     NSValue *val = sender.representedObject;
     if (!val) return;
     NSSize size = val.sizeValue;
-    
+
     TemporarySettings *tempSettings = [[DataManager alloc] getSettings];
     int currentFps = [tempSettings.framerate intValue];
 
@@ -1925,31 +1925,31 @@
     TemporarySettings *tempSettings = [[DataManager alloc] getSettings];
     int currentFps = [tempSettings.framerate intValue];
     if (newFps == currentFps) return;
-    
+
     // Get current resolution settings to preserve them
     NSDictionary *prefs = [SettingsClass getSettingsFor:self.app.host.uuid];
     BOOL matchDisplay = prefs ? [prefs[@"matchDisplayResolution"] boolValue] : NO;
-    
+
     // If not matching display, we need to know the explicit resolution.
     // getResolution returns the currently streaming config resolution, which is what we want to keep.
     struct Resolution currentRes = [self.class getResolution];
-    
+
     [SettingsClass setResolutionAndFps:currentRes.width :currentRes.height :newFps matchDisplay:matchDisplay for:self.app.host.uuid];
-    
+
     [SettingsClass loadMoonlightSettingsFor:self.app.host.uuid];
     [self attemptReconnectWithReason:@"framerate-changed"];
 }
 
 - (void)selectCustomFpsFromMenu:(id)sender {
     NSAlert *alert = [[NSAlert alloc] init];
-    alert.messageText = @"自定义帧率";
-    alert.informativeText = @"请输入期望的帧率（FPS）。";
-    [alert addButtonWithTitle:@"确定"];
-    [alert addButtonWithTitle:@"取消"];
-    
+    alert.messageText = @"CustomFrame Rate";
+    alert.informativeText = @"Enter the desired frame rate (FPS).";
+    [alert addButtonWithTitle:@"OK"];
+    [alert addButtonWithTitle:@"Cancel"];
+
     NSTextField *fpsField = [[NSTextField alloc] initWithFrame:NSMakeRect(0, 0, 200, 24)];
     fpsField.placeholderString = @"60";
-    
+
     // Pre-fill
     NSDictionary *prefs = [SettingsClass getSettingsFor:self.app.host.uuid];
     int currentFps = 0;
@@ -1965,22 +1965,22 @@
         TemporarySettings *tempSettings = [[DataManager alloc] getSettings];
         currentFps = [tempSettings.framerate intValue];
     }
-    
+
     if (currentFps > 0) fpsField.intValue = currentFps;
-    
+
     alert.accessoryView = fpsField;
-    
+
     [alert beginSheetModalForWindow:self.view.window completionHandler:^(NSModalResponse returnCode) {
         if (returnCode == NSAlertFirstButtonReturn) {
             int f = fpsField.intValue;
             if (f < 0) f = 0;
-            
+
             NSDictionary *prefs = [SettingsClass getSettingsFor:self.app.host.uuid];
             BOOL matchDisplay = prefs ? [prefs[@"matchDisplayResolution"] boolValue] : NO;
             struct Resolution currentRes = [self.class getResolution];
-            
+
             [SettingsClass setResolutionAndFps:currentRes.width :currentRes.height :f matchDisplay:matchDisplay for:self.app.host.uuid];
-            
+
             [SettingsClass loadMoonlightSettingsFor:self.app.host.uuid];
             [self attemptReconnectWithReason:@"framerate-changed"];
         }
@@ -2010,7 +2010,7 @@
     }
 
     [SettingsClass loadMoonlightSettingsFor:self.app.host.uuid];
-    [self attemptReconnectWithReason:@"bitrate-changed"]; 
+    [self attemptReconnectWithReason:@"bitrate-changed"];
 }
 
 - (void)handleVolumeSliderChanged:(NSSlider *)sender {
@@ -2048,14 +2048,14 @@ static NSArray<NSNumber *> *bitrateStepsArray(void) {
     CGFloat mbps = [steps[index] floatValue];
     NSInteger kbps = (NSInteger)(mbps * 1000);
 
-    // 更新显示
+    // Update display
     if (mbps < 1.0) {
         self.menuBitrateValueLabel.stringValue = [NSString stringWithFormat:@"%.1f Mbps", mbps];
     } else {
         self.menuBitrateValueLabel.stringValue = [NSString stringWithFormat:@"%.0f Mbps", mbps];
     }
 
-    // 同步更新输入框
+    // Sync input field
     NSView *bitrateView = sender.superview;
     for (NSView *subview in bitrateView.subviews) {
         if ([subview isKindOfClass:[NSTextField class]] && subview.tag == 1001) {
@@ -2069,7 +2069,7 @@ static NSArray<NSNumber *> *bitrateStepsArray(void) {
         }
     }
 
-    // 保存设置（关闭自动模式，设置自定义码率）
+    // Save settings (disable automatic mode and set custom bitrate)
     [SettingsClass setBitrateMode:NO customBitrateKbps:@(kbps) for:self.app.host.uuid];
     [SettingsClass loadMoonlightSettingsFor:self.app.host.uuid];
 }
@@ -2081,23 +2081,23 @@ static NSArray<NSNumber *> *bitrateStepsArray(void) {
 
     NSInteger kbps = (NSInteger)(mbps * 1000);
 
-    // 更新显示
+    // Update display
     if (mbps < 1.0) {
         self.menuBitrateValueLabel.stringValue = [NSString stringWithFormat:@"%.1f Mbps", mbps];
     } else {
         self.menuBitrateValueLabel.stringValue = [NSString stringWithFormat:@"%.0f Mbps", mbps];
     }
 
-    // 更新滑块位置
+    // Update slider position
     [self updateBitrateSliderPosition:kbps];
 
-    // 保存设置
+    // Save settings
     [SettingsClass setBitrateMode:NO customBitrateKbps:@(kbps) for:self.app.host.uuid];
     [SettingsClass loadMoonlightSettingsFor:self.app.host.uuid];
 }
 
 - (void)handleBitrateApplyClicked:(NSButton *)sender {
-    // 触发重连以应用新码率
+    // Trigger reconnect to apply the new bitrate
     [self rebuildStreamMenu];
     [self attemptReconnectWithReason:@"bitrate-changed"];
 }

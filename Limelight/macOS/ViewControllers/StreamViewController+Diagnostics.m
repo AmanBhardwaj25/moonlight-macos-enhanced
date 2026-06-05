@@ -81,19 +81,19 @@
                 return;
             }
 
-            NSString *timeoutMessage = @"主机仍在启动或恢复串流，会比视频阶段慢很多。\n可继续等待，或手动重连 / 返回后重新进入。";
-            [strongSelf showErrorOverlayWithTitle:@"主机启动较慢"
+            NSString *timeoutMessage = @"The host is still launching or resuming the stream, which can take much longer than the video phase.\nYou can keep waiting, reconnect manually, or go back and enter again.";
+            [strongSelf showErrorOverlayWithTitle:@"Host Startup Is Slow"
                                           message:timeoutMessage
                                           canWait:YES];
             return;
         }
-        
+
         // If we are stuck in reconnecting state for > 10s, force error overlay
         if (strongSelf.reconnectInProgress) {
             [strongSelf hideReconnectOverlay];
             strongSelf.reconnectInProgress = NO;
-            [strongSelf showErrorOverlayWithTitle:@"重连超时"
-                                          message:@"重连过程耗时过长，连接可能已断开。\n请检查网络环境或调整设置。"
+            [strongSelf showErrorOverlayWithTitle:@"Reconnect Timed Out"
+                                          message:@"The reconnect process took too long and the connection may be lost.\nCheck the network environment or adjust settings."
                                           canWait:NO];
             return;
         }
@@ -103,25 +103,25 @@
             strongSelf.shouldAttemptReconnect &&
             [strongSelf isAutomaticRecoveryModeEnabled]) {
             strongSelf.didAutoReconnectAfterTimeout = YES;
-            [strongSelf showReconnectOverlayWithMessage:@"网络无响应，正在尝试重连…"]; 
-            [strongSelf attemptReconnectWithReason:@"connect-timeout-auto"]; 
+            [strongSelf showReconnectOverlayWithMessage:@"Network is not responding. Trying to reconnect..."];
+            [strongSelf attemptReconnectWithReason:@"connect-timeout-auto"];
             return;
         }
 
         NSString *timeoutMessage = [strongSelf isAutomaticRecoveryModeEnabled]
-            ? @"已持续 15 秒未接收到视频数据。\n请检查网络连接或尝试以下操作。"
+            ? @"No video data has been received for 15 seconds.\nCheck the network connection or try one of the actions below."
             : [NSString stringWithFormat:@"%@\n%@\n%@",
                 MLString(@"No new video frame has arrived for 15 seconds.", @"Manual timeout lead message"),
                 MLString(@"Manual mode won't change your resolution, frame rate, codec, or chroma automatically.", @"Manual timeout manual mode explanation"),
                 MLString(@"You can keep waiting, reconnect manually, or apply a recommended profile.", @"Manual timeout actions")];
-        [strongSelf showErrorOverlayWithTitle:@"连接不稳定或无画面"
+        [strongSelf showErrorOverlayWithTitle:@"Unstable Connection or No Picture"
                                       message:timeoutMessage
                                       canWait:YES];
     });
 }
 
 - (void)showErrorOverlayWithTitle:(NSString *)title message:(NSString *)message canWait:(BOOL)canWait {
-    // 显示弹窗时释放键鼠捕获，让用户可以自由移动鼠标点击按钮
+    // Release keyboard and mouse capture while showing the dialog so the user can move the mouse and click buttons freely
     [self uncaptureMouseWithCode:@"MUC401" reason:@"show-error-overlay"];
 
     if (!self.timeoutOverlayContainer) {
@@ -131,15 +131,15 @@
         container.state = NSVisualEffectStateActive;
         container.wantsLayer = YES;
         container.alphaValue = 0.0;
-        
-        // 为 NSVisualEffectView 设置圆角需要使用 maskedCorners
+
+        // Use maskedCorners to round NSVisualEffectView corners
         container.layer.cornerRadius = 24.0;
         if (@available(macOS 10.13, *)) {
             container.layer.cornerCurve = kCACornerCurveContinuous;
             container.layer.maskedCorners = kCALayerMinXMinYCorner | kCALayerMaxXMinYCorner | kCALayerMinXMaxYCorner | kCALayerMaxXMaxYCorner;
         }
         container.layer.masksToBounds = YES;
-        
+
         // Shadow for better visibility
         NSShadow *shadow = [[NSShadow alloc] init];
         shadow.shadowBlurRadius = 20.0;
@@ -187,27 +187,27 @@
         }
 
         // --- Core Actions ---
-        
-        NSButton *reconnectBtn = [NSButton buttonWithTitle:@"尝试重连" target:self action:@selector(handleTimeoutReconnect:)];
+
+        NSButton *reconnectBtn = [NSButton buttonWithTitle:@"Try Reconnect" target:self action:@selector(handleTimeoutReconnect:)];
         reconnectBtn.bezelStyle = NSBezelStyleRounded; // Standard pill style
-        reconnectBtn.controlSize = NSControlSizeLarge; 
+        reconnectBtn.controlSize = NSControlSizeLarge;
         reconnectBtn.font = [NSFont systemFontOfSize:14 weight:NSFontWeightSemibold];
         reconnectBtn.keyEquivalent = @"\r";
         // To make it look "filled" on HUD, rely on bezelStyle or use layer
         // Standard macOS dark HUD usually handles rounded buttons well.
 
-        NSButton *waitBtn = [NSButton buttonWithTitle:@"继续等待" target:self action:@selector(handleTimeoutWait:)];
+        NSButton *waitBtn = [NSButton buttonWithTitle:@"Keep Waiting" target:self action:@selector(handleTimeoutWait:)];
         waitBtn.bezelStyle = NSBezelStyleRounded;
         waitBtn.controlSize = NSControlSizeLarge;
 
-        NSButton *exitBtn = [NSButton buttonWithTitle:@"退出串流" target:self action:@selector(handleTimeoutExitStream:)];
+        NSButton *exitBtn = [NSButton buttonWithTitle:@"Disconnect Stream" target:self action:@selector(handleTimeoutExitStream:)];
         exitBtn.bezelStyle = NSBezelStyleRounded;
         exitBtn.controlSize = NSControlSizeLarge;
 
         // --- Settings Strip ---
         // Create custom "card" buttons to match screenshot design:
         // Dark background, rounded corners (6pt), Icon + Text
-        
+
         NSButton *(^createSettingsBtn)(NSString *, NSString *, SEL) = ^(NSString *title, NSString *iconName, SEL selector) {
             NSButton *btn = [[NSButton alloc] initWithFrame:NSMakeRect(0, 0, 100, 28)];
             btn.target = self;
@@ -218,7 +218,7 @@
             btn.layer.backgroundColor = [[NSColor colorWithWhite:1.0 alpha:0.1] CGColor]; // Semi-transparent white => looks like lighter dark grey on dark background
             btn.layer.cornerRadius = 6.0;
             btn.layer.masksToBounds = YES;
-            
+
             btn.title = title;
             btn.font = [NSFont systemFontOfSize:12 weight:NSFontWeightMedium];
             if ([btn.cell isKindOfClass:[NSButtonCell class]]) {
@@ -228,9 +228,9 @@
                 btn.image = [NSImage imageWithSystemSymbolName:iconName accessibilityDescription:nil];
                 btn.imagePosition = NSImageLeading;
                 btn.contentTintColor = [NSColor whiteColor];
-                // 设置图标和文字的间距
+                // Set icon and text spacing
                 btn.imageHugsTitle = YES;
-                // 调整按钮对齐方式为居中
+                // Center button alignment
                 btn.alignment = NSTextAlignmentCenter;
             } else {
                 btn.imagePosition = NSImageLeft;
@@ -238,14 +238,14 @@
             return btn;
         };
 
-        NSButton *resBtn = createSettingsBtn(@"分辨率", @"display", @selector(handleTimeoutResolution:));
-        NSButton *bitrateBtn = createSettingsBtn(@"码率", @"speedometer", @selector(handleTimeoutBitrate:));
-        NSButton *displayModeBtn = createSettingsBtn(@"显示模式", @"macwindow", @selector(handleTimeoutDisplayMode:));
-        NSButton *connBtn = createSettingsBtn(@"连接方式", @"network", @selector(handleTimeoutConnection:));
-        NSButton *recommendedBtn = createSettingsBtn(@"推荐档位", @"sparkles", @selector(handleTimeoutRecommendedProfile:));
+        NSButton *resBtn = createSettingsBtn(@"Resolution", @"display", @selector(handleTimeoutResolution:));
+        NSButton *bitrateBtn = createSettingsBtn(@"Bitrate", @"speedometer", @selector(handleTimeoutBitrate:));
+        NSButton *displayModeBtn = createSettingsBtn(@"Display Mode", @"macwindow", @selector(handleTimeoutDisplayMode:));
+        NSButton *connBtn = createSettingsBtn(@"Connection Method", @"network", @selector(handleTimeoutConnection:));
+        NSButton *recommendedBtn = createSettingsBtn(@"Recommended Profile", @"sparkles", @selector(handleTimeoutRecommendedProfile:));
 
-        // --- Log Tools - 改进样式，使用图标按钮 ---
-        
+        // --- Log Tools - improved styling with icon buttons ---
+
         NSButton *(^createLogBtn)(NSString *, NSString *, SEL) = ^(NSString *title, NSString *iconName, SEL selector) {
             NSButton *btn = [[NSButton alloc] initWithFrame:NSMakeRect(0, 0, 90, 28)];
             btn.target = self;
@@ -253,13 +253,13 @@
             btn.bezelStyle = NSBezelStyleRegularSquare;
             btn.bordered = NO;
             btn.wantsLayer = YES;
-            // 使用更浅的背景色，区别于设置按钮
+            // Use a lighter background color to distinguish these from settings buttons
             btn.layer.backgroundColor = [[NSColor colorWithWhite:1.0 alpha:0.06] CGColor];
             btn.layer.cornerRadius = 6.0;
             btn.layer.borderWidth = 0.5;
             btn.layer.borderColor = [[NSColor colorWithWhite:1.0 alpha:0.15] CGColor];
             btn.layer.masksToBounds = YES;
-            
+
             btn.title = title;
             btn.font = [NSFont systemFontOfSize:11 weight:NSFontWeightMedium];
             if ([btn.cell isKindOfClass:[NSButtonCell class]]) {
@@ -276,9 +276,9 @@
             }
             return btn;
         };
-        
-        NSButton *viewLogBtn = createLogBtn(@"查看日志", @"doc.text.magnifyingglass", @selector(handleTimeoutViewLogs:));
-        NSButton *copyLogBtn = createLogBtn(@"复制日志", @"doc.on.doc", @selector(handleTimeoutCopyLogs:));
+
+        NSButton *viewLogBtn = createLogBtn(@"View Logs", @"doc.text.magnifyingglass", @selector(handleTimeoutViewLogs:));
+        NSButton *copyLogBtn = createLogBtn(@"Copy Logs", @"doc.on.doc", @selector(handleTimeoutCopyLogs:));
 
         // --- Hierarchy ---
 
@@ -312,17 +312,17 @@
         [container addSubview:copyLogBtn];
 
         [self.view addSubview:container positioned:NSWindowAbove relativeTo:nil];
-        
+
         container.alphaValue = 0.0;
         [NSAnimationContext runAnimationGroup:^(NSAnimationContext *context) {
             context.duration = 0.25;
             container.animator.alphaValue = 1.0;
         } completionHandler:nil];
     }
-    
+
     // Update content
-    self.timeoutTitleLabel.stringValue = title ?: @"连接异常";
-    self.timeoutLabel.stringValue = message ?: @"未知错误";
+    self.timeoutTitleLabel.stringValue = title ?: @"Connection Error";
+    self.timeoutLabel.stringValue = message ?: @"Unknown Error";
     self.timeoutWaitButton.hidden = !canWait;
     BOOL showRecommendedProfile = self.currentStreamRiskAssessment != nil &&
                                   self.currentStreamRiskAssessment.manualExpertMode &&
@@ -384,7 +384,7 @@
     [self rebuildStreamMenu];
     NSMenuItem *monitorItem = nil;
     for (NSMenuItem *item in self.streamMenu.itemArray) {
-        if ([item.title isEqualToString:@"屏幕"]) {
+        if ([item.title isEqualToString:@"Display"]) {
             monitorItem = item;
             break;
         }
@@ -400,7 +400,7 @@
     [self rebuildStreamMenu];
     NSMenuItem *qualityItem = nil;
     for (NSMenuItem *item in self.streamMenu.itemArray) {
-        if ([item.title isEqualToString:@"画质"]) {
+        if ([item.title isEqualToString:@"Quality"]) {
             qualityItem = item;
             break;
         }
@@ -416,7 +416,7 @@
     [self rebuildStreamMenu];
     NSMenuItem *windowItem = nil;
     for (NSMenuItem *item in self.streamMenu.itemArray) {
-        if ([item.title isEqualToString:@"窗口"]) {
+        if ([item.title isEqualToString:@"Window"]) {
             windowItem = item;
             break;
         }
@@ -431,13 +431,13 @@
 - (void)handleTimeoutConnection:(id)sender {
     NSMenu *menu = [[NSMenu alloc] initWithTitle:@"Connections"];
     TemporaryHost *host = self.app.host;
-    
+
     NSMutableSet *seen = [NSMutableSet set];
-    
+
     void (^addItem)(NSString *, NSString *) = ^(NSString *title, NSString *addr) {
         if (!addr || [seen containsObject:addr]) return;
         [seen addObject:addr];
-        
+
         NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:[NSString stringWithFormat:@"%@: %@", title, addr] action:@selector(handleConnectionSelection:) keyEquivalent:@""];
         item.target = self;
         item.representedObject = addr;
@@ -447,18 +447,18 @@
         [menu addItem:item];
     };
 
-    addItem(@"当前", host.activeAddress); // Ensure current is always first if valid
+    addItem(@"Current", host.activeAddress); // Ensure current is always first if valid
     addItem(@"Local", host.localAddress);
     addItem(@"IPv6", host.ipv6Address);
     addItem(@"Public", host.externalAddress);
     addItem(@"Manual", host.address);
-    
+
     if (menu.itemArray.count == 0 && host.activeAddress) {
         addItem(@"Default", host.activeAddress);
     }
-    
+
     if (menu.itemArray.count == 0) {
-        [menu addItemWithTitle:@"无可用地址" action:nil keyEquivalent:@""];
+        [menu addItemWithTitle:@"No Available Addresses" action:nil keyEquivalent:@""];
     }
 
     NSButton *btn = (NSButton *)sender;
@@ -1414,7 +1414,7 @@
     if ([line localizedCaseInsensitiveContainsString:@"Internal inconsistency in menus"]) {
         return @{
             @"key": @"noise.appkit.menu",
-            @"line": @"<WARN> [系统] AppKit 菜单一致性异常"
+            @"line": @"<WARN> [System] AppKit menu consistency warning"
         };
     }
 
@@ -1439,7 +1439,7 @@
         }
         return @{
             @"key": [NSString stringWithFormat:@"noise.discovery.summary.%@.%@", host, state],
-            @"line": [NSString stringWithFormat:@"<INFO> [发现] %@：%@", host, state]
+            @"line": [NSString stringWithFormat:@"<INFO> [Discovery] %@: %@", host, state]
         };
     }
 
@@ -1455,15 +1455,15 @@
         }
         return @{
             @"key": [NSString stringWithFormat:@"noise.discovery.resolved.%@", host],
-            @"line": [NSString stringWithFormat:@"<INFO> [发现] 地址解析 %@", host]
+            @"line": [NSString stringWithFormat:@"<INFO> [Discovery] Address resolved %@", host]
         };
     }
 
     if ([line localizedCaseInsensitiveContainsString:@"[curated]"]
-        && [line localizedCaseInsensitiveContainsString:@"内重复"]) {
+        && [line localizedCaseInsensitiveContainsString:@"repeated"]) {
         return @{
             @"key": @"noise.curated.repeat",
-            @"line": @"<WARN> [日志] 重复日志抑制摘要"
+            @"line": @"<WARN> [Logs] Repeated log suppression summary"
         };
     }
 
@@ -1471,7 +1471,7 @@
         NSString *code = errorCode ?: @"unknown";
         return @{
             @"key": [NSString stringWithFormat:@"noise.net.%@", code],
-            @"line": [NSString stringWithFormat:@"<WARN> [网络] 请求失败 %@，正在自动回退", code]
+            @"line": [NSString stringWithFormat:@"<WARN> [Network] Request failed %@, falling back automatically", code]
         };
     }
 
@@ -1479,7 +1479,7 @@
         NSString *code = errorCode ?: @"unknown";
         return @{
             @"key": [NSString stringWithFormat:@"noise.net.%@", code],
-            @"line": [NSString stringWithFormat:@"<WARN> [网络] NSURLError %@", code]
+            @"line": [NSString stringWithFormat:@"<WARN> [Network] NSURLError %@", code]
         };
     }
 
@@ -1493,38 +1493,38 @@
         NSString *code = errorCode ?: @"unknown";
         return @{
             @"key": [NSString stringWithFormat:@"noise.net.%@", code],
-            @"line": [NSString stringWithFormat:@"<WARN> [网络栈] 连接层异常 %@", code]
+            @"line": [NSString stringWithFormat:@"<WARN> [Network Stack] connection-layer error %@", code]
         };
     }
 
     if ([line localizedCaseInsensitiveContainsString:@"Recovered 1 audio data shards from block"]) {
         return @{
             @"key": @"stream.audio.fec.recovered",
-            @"line": @"<INFO> [音频] FEC 分片已恢复"
+            @"line": @"<INFO> [Audio] FEC fragment recovered"
         };
     }
 
     if ([line localizedCaseInsensitiveContainsString:@"Recovered 1 video data shards from frame"]) {
         return @{
             @"key": @"stream.video.fec.recovered",
-            @"line": @"<INFO> [视频] FEC 分片已恢复"
+            @"line": @"<INFO> [Video] FEC fragment recovered"
         };
     }
 
     if ([line localizedCaseInsensitiveContainsString:@"Starting discovery"]) {
-        return @{ @"key": @"default.discovery.start", @"line": @"<INFO> [发现] 开始扫描主机" };
+        return @{ @"key": @"default.discovery.start", @"line": @"<INFO> [Discovery] Start host scan" };
     }
 
     if ([line localizedCaseInsensitiveContainsString:@"Starting mDNS discovery"]) {
-        return @{ @"key": @"default.discovery.mdns.start", @"line": @"<INFO> [发现] 开始 mDNS 发现" };
+        return @{ @"key": @"default.discovery.mdns.start", @"line": @"<INFO> [Discovery] Start mDNS discovery" };
     }
 
     if ([line localizedCaseInsensitiveContainsString:@"Stopping discovery"]) {
-        return @{ @"key": @"default.discovery.stop", @"line": @"<INFO> [发现] 停止扫描主机" };
+        return @{ @"key": @"default.discovery.stop", @"line": @"<INFO> [Discovery] Stop host scan" };
     }
 
     if ([line localizedCaseInsensitiveContainsString:@"Stopping mDNS discovery"]) {
-        return @{ @"key": @"default.discovery.mdns.stop", @"line": @"<INFO> [发现] 停止 mDNS 发现" };
+        return @{ @"key": @"default.discovery.mdns.stop", @"line": @"<INFO> [Discovery] Stop mDNS discovery" };
     }
 
     if ([line localizedCaseInsensitiveContainsString:@"Found new host:"]) {
@@ -1532,33 +1532,33 @@
         host = [host stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
         return @{
             @"key": [NSString stringWithFormat:@"default.discovery.host.%@", host ?: @"unknown"],
-            @"line": [NSString stringWithFormat:@"<INFO> [发现] 新主机 %@", host.length > 0 ? host : @"unknown"]
+            @"line": [NSString stringWithFormat:@"<INFO> [Discovery] New host %@", host.length > 0 ? host : @"unknown"]
         };
     }
 
     if ([line localizedCaseInsensitiveContainsString:@"Server certificate mismatch"]) {
-        return @{ @"key": @"default.identity.cert", @"line": @"<WARN> [身份] 服务器证书与已保存身份不匹配" };
+        return @{ @"key": @"default.identity.cert", @"line": @"<WARN> [Identity] Server certificate does not match the saved identity" };
     }
 
     if ([line localizedCaseInsensitiveContainsString:@"Received response from incorrect host:"]) {
-        return @{ @"key": @"default.identity.host", @"line": @"<WARN> [身份] 收到错误主机的响应" };
+        return @{ @"key": @"default.identity.host", @"line": @"<WARN> [Identity] Received response from the wrong host" };
     }
 
     if ([line localizedCaseInsensitiveContainsString:@"App list successfully retreived"]
         || [line localizedCaseInsensitiveContainsString:@"App list successfully retrieved"]) {
-        return @{ @"key": @"default.applist.success", @"line": @"<INFO> [主机] 应用列表获取成功" };
+        return @{ @"key": @"default.applist.success", @"line": @"<INFO> [Host] App list fetched successfully" };
     }
 
     if ([line localizedCaseInsensitiveContainsString:@"Stream target selection:"]) {
-        return @{ @"key": @"default.stream.target", @"line": @"<INFO> [串流] 已选择串流目标" };
+        return @{ @"key": @"default.stream.target", @"line": @"<INFO> [Stream] Selected stream target" };
     }
 
     if ([line localizedCaseInsensitiveContainsString:@"Stream target classification:"]) {
-        return @{ @"key": @"default.stream.classification", @"line": @"<INFO> [串流] 已完成路径判定" };
+        return @{ @"key": @"default.stream.classification", @"line": @"<INFO> [Stream] Completed route classification" };
     }
 
     if ([line localizedCaseInsensitiveContainsString:@"Input summary ("]) {
-        return @{ @"key": @"default.input.summary", @"line": @"<INFO> [输入] 输入统计摘要" };
+        return @{ @"key": @"default.input.summary", @"line": @"<INFO> [Input] Input statistics summary" };
     }
 
     return @{
@@ -1753,7 +1753,7 @@
     }
 
     [popup removeAllItems];
-    [popup addItemWithTitle:@"全部 / All"];
+    [popup addItemWithTitle:@"All"];
     popup.itemArray.lastObject.representedObject = @"all";
 
     for (MLLogCategoryDescriptor *descriptor in [MLLogCategoryClassifier filterOptions]) {
@@ -1783,9 +1783,9 @@
     }
 
     [popup removeAllItems];
-    [popup addItemWithTitle:@"默认日志"];
+    [popup addItemWithTitle:@"Default Log"];
     popup.itemArray.lastObject.representedObject = @"default";
-    [popup addItemWithTitle:@"原始日志"];
+    [popup addItemWithTitle:@"Raw Log"];
     popup.itemArray.lastObject.representedObject = @"raw";
 
     NSInteger matchIndex = 0;
@@ -1807,7 +1807,7 @@
 
     [popup removeAllItems];
     NSArray<NSArray<NSString *> *> *items = @[
-        @[ @"全部级别", @"all" ],
+        @[ @"All Levels", @"all" ],
         @[ @"Debug+", @"debug" ],
         @[ @"Info+", @"info" ],
         @[ @"Warn+", @"warn" ],
@@ -1853,10 +1853,10 @@
     NSPopUpButton *levelPopup = [self.logOverlayContainer viewWithTag:1010];
 
     if (pauseBtn) {
-        pauseBtn.title = self.logOverlayPauseUpdates ? @"继续更新" : @"暂停更新";
+        pauseBtn.title = self.logOverlayPauseUpdates ? @"Resume Updates" : @"Pause Updates";
     }
     if (autoScrollBtn) {
-        autoScrollBtn.title = self.logOverlayAutoScrollEnabled ? @"暂停滚动" : @"开启滚动";
+        autoScrollBtn.title = self.logOverlayAutoScrollEnabled ? @"Pause Scrolling" : @"Enable Scrolling";
     }
     if (jumpBtn) {
         jumpBtn.enabled = self.logOverlayDisplayLines.count > 0;
@@ -1867,7 +1867,7 @@
                             self.logOverlayAllRawLines.count > 0);
     }
     if (copyBtn) {
-        copyBtn.title = [self.logOverlayModeKey isEqualToString:@"raw"] ? @"复制原始日志" : @"复制默认日志";
+        copyBtn.title = [self.logOverlayModeKey isEqualToString:@"raw"] ? @"Copy Raw Log" : @"Copy Default Log";
         copyBtn.enabled = self.logOverlayDisplayLines.count > 0;
     }
     if (searchField && ![searchField.stringValue isEqualToString:self.logOverlaySearchText ?: @""]) {
@@ -1917,10 +1917,10 @@
     }
     if (statusLabel) {
         NSMutableArray<NSString *> *parts = [[NSMutableArray alloc] init];
-        NSString *modeSummary = [self.logOverlayModeKey isEqualToString:@"raw"] ? @"原始日志" : @"默认日志";
+        NSString *modeSummary = [self.logOverlayModeKey isEqualToString:@"raw"] ? @"Raw Log" : @"Default Log";
         [parts addObject:modeSummary];
 
-        NSString *levelSummary = @"全部级别";
+        NSString *levelSummary = @"All Levels";
         if ([self.logOverlayMinimumLevelKey isEqualToString:@"debug"]) {
             levelSummary = @"Debug+";
         } else if ([self.logOverlayMinimumLevelKey isEqualToString:@"info"]) {
@@ -1939,15 +1939,15 @@
 
         NSString *keyword = [self.logOverlaySearchText stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
         if (keyword.length > 0) {
-            [parts addObject:[NSString stringWithFormat:@"搜索=%@", keyword]];
+            [parts addObject:[NSString stringWithFormat:@"search=%@", keyword]];
         }
 
-        [parts addObject:[NSString stringWithFormat:@"显示 %lu 行 / 原始 %lu 条",
+        [parts addObject:[NSString stringWithFormat:@"Showing %lu rows / raw %lu entries",
                           (unsigned long)self.logOverlayDisplayLines.count,
                           (unsigned long)self.logOverlayAllRawLines.count]];
 
         if (self.logOverlayPauseUpdates && self.logOverlayPausedRawLines.count > 0) {
-            [parts addObject:[NSString stringWithFormat:@"暂停中，待处理 %lu 条",
+            [parts addObject:[NSString stringWithFormat:@"Paused, pending %lu entries",
                               (unsigned long)self.logOverlayPausedRawLines.count]];
             statusLabel.stringValue = [parts componentsJoinedByString:@" | "];
         } else {
@@ -1994,9 +1994,9 @@
     if ([sender isKindOfClass:[NSButton class]]) {
         NSButton *btn = (NSButton *)sender;
         NSString *origTitle = btn.title;
-        btn.title = @"已复制";
+        btn.title = @"Copied";
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-            if ([btn.title isEqualToString:@"已复制"]) {
+            if ([btn.title isEqualToString:@"Copied"]) {
                 btn.title = origTitle;
             }
         });
@@ -2017,39 +2017,39 @@
     self.logOverlayContainer.wantsLayer = YES;
     self.logOverlayContainer.layer.cornerRadius = 12.0;
     self.logOverlayContainer.layer.masksToBounds = YES;
-    
+
     // Close Button
-    NSButton *closeBtn = [NSButton buttonWithTitle:@"关闭" target:self action:@selector(handleLogOverlayClose:)];
+    NSButton *closeBtn = [NSButton buttonWithTitle:@"Close" target:self action:@selector(handleLogOverlayClose:)];
     closeBtn.bezelStyle = NSBezelStyleRounded;
     closeBtn.controlSize = NSControlSizeRegular;
     closeBtn.tag = 999;
     [self.logOverlayContainer addSubview:closeBtn];
 
-    NSButton *pauseBtn = [NSButton buttonWithTitle:@"暂停更新" target:self action:@selector(handleLogOverlayPauseToggle:)];
+    NSButton *pauseBtn = [NSButton buttonWithTitle:@"Pause Updates" target:self action:@selector(handleLogOverlayPauseToggle:)];
     pauseBtn.bezelStyle = NSBezelStyleRounded;
     pauseBtn.controlSize = NSControlSizeSmall;
     pauseBtn.tag = 1001;
     [self.logOverlayContainer addSubview:pauseBtn];
 
-    NSButton *autoScrollBtn = [NSButton buttonWithTitle:@"暂停滚动" target:self action:@selector(handleLogOverlayAutoScrollToggle:)];
+    NSButton *autoScrollBtn = [NSButton buttonWithTitle:@"Pause Scrolling" target:self action:@selector(handleLogOverlayAutoScrollToggle:)];
     autoScrollBtn.bezelStyle = NSBezelStyleRounded;
     autoScrollBtn.controlSize = NSControlSizeSmall;
     autoScrollBtn.tag = 1002;
     [self.logOverlayContainer addSubview:autoScrollBtn];
 
-    NSButton *jumpLatestBtn = [NSButton buttonWithTitle:@"最新" target:self action:@selector(handleLogOverlayJumpLatest:)];
+    NSButton *jumpLatestBtn = [NSButton buttonWithTitle:@"Latest" target:self action:@selector(handleLogOverlayJumpLatest:)];
     jumpLatestBtn.bezelStyle = NSBezelStyleRounded;
     jumpLatestBtn.controlSize = NSControlSizeSmall;
     jumpLatestBtn.tag = 1003;
     [self.logOverlayContainer addSubview:jumpLatestBtn];
 
-    NSButton *copyBtn = [NSButton buttonWithTitle:@"复制默认日志" target:self action:@selector(handleLogOverlayCopyCompact:)];
+    NSButton *copyBtn = [NSButton buttonWithTitle:@"Copy Default Log" target:self action:@selector(handleLogOverlayCopyCompact:)];
     copyBtn.bezelStyle = NSBezelStyleRounded;
     copyBtn.controlSize = NSControlSizeSmall;
     copyBtn.tag = 1004;
     [self.logOverlayContainer addSubview:copyBtn];
 
-    NSButton *clearBtn = [NSButton buttonWithTitle:@"从现在开始" target:self action:@selector(handleLogOverlayClearFromNow:)];
+    NSButton *clearBtn = [NSButton buttonWithTitle:@"From Now" target:self action:@selector(handleLogOverlayClearFromNow:)];
     clearBtn.bezelStyle = NSBezelStyleRounded;
     clearBtn.controlSize = NSControlSizeSmall;
     clearBtn.tag = 1006;
@@ -2072,7 +2072,7 @@
     [self.logOverlayContainer addSubview:self.logOverlayLevelPopup];
 
     self.logOverlaySearchField = [[NSSearchField alloc] initWithFrame:NSZeroRect];
-    self.logOverlaySearchField.placeholderString = @"搜索关键词 / 主机 / 错误码";
+    self.logOverlaySearchField.placeholderString = @"Search keyword / host / error code";
     self.logOverlaySearchField.font = [NSFont systemFontOfSize:12 weight:NSFontWeightRegular];
     self.logOverlaySearchField.sendsWholeSearchString = NO;
     self.logOverlaySearchField.sendsSearchStringImmediately = YES;
@@ -2097,7 +2097,7 @@
     statusLabel.font = [NSFont monospacedSystemFontOfSize:11 weight:NSFontWeightRegular];
     statusLabel.textColor = [NSColor colorWithWhite:0.85 alpha:1.0];
     statusLabel.tag = 1005;
-    statusLabel.stringValue = @"显示 0 行";
+    statusLabel.stringValue = @"Showing 0 rows";
     [self.logOverlayContainer addSubview:statusLabel];
 
     self.logOverlayScrollView = [[NSScrollView alloc] initWithFrame:NSZeroRect];
@@ -2110,7 +2110,7 @@
     self.logOverlayTextView.drawsBackground = NO;
     self.logOverlayTextView.font = [NSFont monospacedSystemFontOfSize:12 weight:NSFontWeightRegular];
     self.logOverlayTextView.textColor = [NSColor whiteColor];
-    
+
     self.logOverlayTextView.minSize = NSMakeSize(0.0, 0.0);
     self.logOverlayTextView.maxSize = NSMakeSize(FLT_MAX, FLT_MAX);
     self.logOverlayTextView.verticallyResizable = YES;
@@ -2142,10 +2142,10 @@
     if (!self.logOverlayContainer) {
         return;
     }
-    
+
     // If opened from timeout menu (not stream menu), we allow closing it
     // without closing the underlying timeout menu.
-    
+
     NSVisualEffectView *container = self.logOverlayContainer;
     self.logOverlayContainer = nil;
     self.logOverlayScrollView = nil;
@@ -2435,7 +2435,7 @@
     if (self.overlayContainer) {
         [self.overlayContainer removeFromSuperview];
     }
-    
+
     self.overlayContainer = [[NSVisualEffectView alloc] initWithFrame:NSZeroRect];
     self.overlayContainer.material = NSVisualEffectMaterialHUDWindow;
     self.overlayContainer.blendingMode = NSVisualEffectBlendingModeWithinWindow;
@@ -2443,14 +2443,14 @@
     self.overlayContainer.wantsLayer = YES;
     self.overlayContainer.layer.cornerRadius = 10.0;
     self.overlayContainer.layer.masksToBounds = YES;
-    
+
     self.overlayLabel = [[NSTextField alloc] initWithFrame:NSZeroRect];
     self.overlayLabel.bezeled = NO;
     self.overlayLabel.drawsBackground = NO;
     self.overlayLabel.editable = NO;
     self.overlayLabel.selectable = NO;
     self.overlayLabel.font = [NSFont monospacedDigitSystemFontOfSize:13 weight:NSFontWeightRegular];
-    
+
     [self.overlayContainer addSubview:self.overlayLabel];
 
     // Ensure overlay is always above the video render view.
@@ -2489,7 +2489,7 @@
         return;
     }
     self.overlayContainer.hidden = NO;
-    
+
     NSString *codecString = @"Unknown";
     if (videoFormat & VIDEO_FORMAT_MASK_H264) {
         codecString = @"H.264";
@@ -2508,7 +2508,7 @@
     }
 
     NSString *chromaString = (videoFormat & VIDEO_FORMAT_MASK_YUV444) ? @"4:4:4" : @"4:2:0";
-    
+
     DataManager* dataMan = [[DataManager alloc] init];
     TemporarySettings* streamSettings = [dataMan getSettings];
 
@@ -2533,7 +2533,7 @@
     float receivedFps = displayedFps(stats.receivedFps, stats.receivedFrames);
     float decodedFps = displayedFps(stats.decodedFps, stats.decodedFrames);
     float renderedFps = displayedFps(stats.renderedFps, stats.renderedFrames);
-    
+
     uint32_t rtt = 0;
     BOOL rttAvailable = NO;
     BOOL usingPathProbeLatency = NO;
@@ -2548,14 +2548,14 @@
             usingPathProbeLatency = YES;
         }
     }
-    
+
     float loss = stats.totalFrames > 0 ? (float)stats.networkDroppedFrames / stats.totalFrames * 100.0f : 0;
     float jitter = stats.jitterMs;
     float onePercentLowFps = stats.renderedFpsOnePercentLow;
 
     // Approximate current video bitrate over the last measurement window (≈1s)
     double bitrateMbps = (double)stats.receivedBytes * 8.0 / 1000.0 / 1000.0;
-    
+
     float renderTime = stats.renderedFrames > 0 ? (float)stats.totalRenderTime / stats.renderedFrames : 0;
     float decodeTime = stats.decodedFrames > 0 ? (float)stats.totalDecodeTime / stats.decodedFrames : 0;
     float encodeTime = stats.framesWithHostProcessingLatency > 0 ? (float)stats.totalHostProcessingLatency / 10.0f / stats.framesWithHostProcessingLatency : 0;
@@ -2573,14 +2573,14 @@
     }
     float streamLatencyMs = pipelineTime + transportOneWayMs;
     BOOL streamLatencyAvailable = (pipelineTime > 0.0f) || hasTransportEstimate;
-    
+
     NSMutableAttributedString *attrString = [[NSMutableAttributedString alloc] init];
-    
+
     NSDictionary *labelAttrs = @{
         NSForegroundColorAttributeName: [NSColor whiteColor],
         NSFontAttributeName: [NSFont systemFontOfSize:13 weight:NSFontWeightRegular]
     };
-    
+
     NSDictionary *valueAttrs = @{
         NSForegroundColorAttributeName: [NSColor colorWithRed:1.0 green:1.0 blue:0.5 alpha:1.0], // Light Yellow
         NSFontAttributeName: [NSFont monospacedDigitSystemFontOfSize:13 weight:NSFontWeightBold]
@@ -2588,7 +2588,7 @@
     void (^append)(NSString *, NSDictionary *) = ^(NSString *str, NSDictionary *attrs) {
         [attrString appendAttributedString:[[NSAttributedString alloc] initWithString:str attributes:attrs]];
     };
-    
+
     // Resolution & FPS (use configured FPS for the left-side value)
     append([NSString stringWithFormat:@"%dx%d@%d", res.width, res.height, configuredFps], valueAttrs);
     append(@"  ", labelAttrs);
@@ -2610,7 +2610,7 @@
     } else {
         append(@"--", valueAttrs);
     }
-    
+
     // Network
     append(@"  ", labelAttrs);
     append(MLString(@"Stream Latency", nil), labelAttrs);
@@ -2632,7 +2632,7 @@
     append(@" ms  Br ", labelAttrs);
     append([NSString stringWithFormat:@"%.1f", bitrateMbps], valueAttrs);
     append(@" Mbps", labelAttrs);
-    
+
     // Latency
     append(@"  |  ", labelAttrs);
     append(MLString(@"Pipeline", nil), labelAttrs);
@@ -2658,19 +2658,19 @@
 
     self.overlayLabel.attributedStringValue = attrString;
     [self.overlayLabel sizeToFit];
-    
+
     // Layout
     CGFloat padding = 10.0;
     NSRect labelFrame = self.overlayLabel.frame;
     NSRect containerFrame = NSMakeRect(0, 0, labelFrame.size.width + padding * 2, labelFrame.size.height + padding * 2);
-    
+
     // Center top
     CGFloat x = (self.view.bounds.size.width - containerFrame.size.width) / 2;
     CGFloat y = self.view.bounds.size.height - containerFrame.size.height - 20; // 20px from top
-    
+
     containerFrame.origin = NSMakePoint(x, y);
     self.overlayContainer.frame = containerFrame;
-    
+
     self.overlayLabel.frame = NSMakeRect(padding, padding, labelFrame.size.width, labelFrame.size.height);
 }
 
@@ -2697,7 +2697,7 @@
     self.connectionWarningLabel.selectable = NO;
     self.connectionWarningLabel.font = [NSFont systemFontOfSize:13 weight:NSFontWeightSemibold];
     self.connectionWarningLabel.textColor = [NSColor whiteColor];
-    
+
     // Use a warning symbol if possible, or just text
     NSString *warningText = MLString(@"Poor Connection", @"Connection warning overlay");
     self.connectionWarningLabel.stringValue = warningText;
@@ -2707,7 +2707,7 @@
     [self.view addSubview:self.connectionWarningContainer positioned:NSWindowAbove relativeTo:nil];
 
     [self layoutConnectionWarning];
-    
+
     // Fade in animation
     self.connectionWarningContainer.alphaValue = 0.0;
     [NSAnimationContext runAnimationGroup:^(NSAnimationContext *context) {
@@ -2916,11 +2916,11 @@
                                                        (NSHeight(bounds) - height) / 2.0,
                                                        width,
                                                        height);
-        
-        // 为 NSVisualEffectView 应用圆角遮罩
+
+        // Apply rounded-corner mask to NSVisualEffectView
         CAShapeLayer *maskLayer = [CAShapeLayer layer];
-        NSBezierPath *roundedPath = [NSBezierPath bezierPathWithRoundedRect:self.timeoutOverlayContainer.bounds 
-                                                                    xRadius:24.0 
+        NSBezierPath *roundedPath = [NSBezierPath bezierPathWithRoundedRect:self.timeoutOverlayContainer.bounds
+                                                                    xRadius:24.0
                                                                     yRadius:24.0];
         CGPathRef cgPath = [self CGPathFromNSBezierPath:roundedPath];
         maskLayer.path = cgPath;
@@ -2938,7 +2938,7 @@
         currentY -= messageHeight + 24.0;
 
         CGFloat mainBtnY = currentY - largeBtnHeight;
-        
+
         // Primary Action: Reconnect and Wait
         if (self.timeoutWaitButton.hidden) {
             // Reconnect centered
@@ -2949,7 +2949,7 @@
             self.timeoutReconnectButton.frame = NSMakeRect(centerX - largeBtnWidth - primaryButtonsGap / 2.0, mainBtnY, largeBtnWidth, largeBtnHeight);
             self.timeoutWaitButton.frame = NSMakeRect(centerX + primaryButtonsGap / 2.0, mainBtnY, largeBtnWidth, largeBtnHeight);
         }
-        
+
         // Exit Action
         CGFloat exitBtnY = mainBtnY - largeBtnHeight - 12.0;
         self.timeoutExitButton.frame = NSMakeRect(centerX - largeBtnWidth / 2.0, exitBtnY, largeBtnWidth, largeBtnHeight);
@@ -2988,7 +2988,7 @@
 
 - (void)layoutConnectionWarning {
     if (!self.connectionWarningContainer) return;
-    
+
     CGFloat padding = 10.0;
     NSRect labelFrame = self.connectionWarningLabel.frame;
     NSRect containerFrame = NSMakeRect(0, 0, labelFrame.size.width + padding * 2, labelFrame.size.height + padding * 2);
@@ -3006,7 +3006,7 @@
     if (!self.connectionWarningContainer) {
         return;
     }
-    
+
     [NSAnimationContext runAnimationGroup:^(NSAnimationContext *context) {
         context.duration = 0.5;
         self.connectionWarningContainer.animator.alphaValue = 0.0;
@@ -3069,7 +3069,7 @@
     [self.view addSubview:self.mouseModeContainer positioned:NSWindowAbove relativeTo:nil];
 
     [self layoutMouseModeIndicator];
-    
+
     // Fade in animation
     self.mouseModeContainer.alphaValue = 0.0;
     [NSAnimationContext runAnimationGroup:^(NSAnimationContext *context) {
@@ -3080,7 +3080,7 @@
 
 - (void)layoutMouseModeIndicator {
     if (!self.mouseModeContainer) return;
-    
+
     CGFloat padding = 10.0;
     NSRect labelFrame = self.mouseModeLabel.frame;
     NSRect containerFrame = NSMakeRect(0, 0, labelFrame.size.width + padding * 2, labelFrame.size.height + padding * 2);
@@ -3098,7 +3098,7 @@
     if (!self.mouseModeContainer) {
         return;
     }
-    
+
     [NSAnimationContext runAnimationGroup:^(NSAnimationContext *context) {
         context.duration = 0.5;
         self.mouseModeContainer.animator.alphaValue = 0.0;
@@ -3164,7 +3164,7 @@
     // Animation
     self.notificationContainer.alphaValue = 0.0;
     self.notificationContainer.layer.transform = CATransform3DMakeScale(0.8, 0.8, 1.0);
-    
+
     [NSAnimationContext runAnimationGroup:^(NSAnimationContext *context) {
         context.duration = 0.2;
         self.notificationContainer.animator.alphaValue = 1.0;
@@ -3190,15 +3190,15 @@
     }];
 }
 
-// 辅助方法：将 NSBezierPath 转换为 CGPath
+// Helper: convert NSBezierPath to CGPath
 - (CGPathRef)CGPathFromNSBezierPath:(NSBezierPath *)bezierPath {
     CGMutablePathRef path = CGPathCreateMutable();
     NSInteger count = [bezierPath elementCount];
-    
+
     for (NSInteger i = 0; i < count; i++) {
         NSPoint points[3];
         NSBezierPathElement element = [bezierPath elementAtIndex:i associatedPoints:points];
-        
+
         switch (element) {
             case NSBezierPathElementMoveTo:
                 CGPathMoveToPoint(path, NULL, points[0].x, points[0].y);
@@ -3219,7 +3219,7 @@
                 break;
         }
     }
-    
+
     return path;
 }
 

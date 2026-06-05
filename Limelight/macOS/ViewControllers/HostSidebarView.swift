@@ -114,25 +114,25 @@ extension HostDisplayModel {
         // Unknown -> Gray (or Yellow as before, but HostCell says Gray for unknown default, though there is a comment about yellow in previous swift code. Let's stick to the requested plan: Unknown -> Yellow)
 
         // User request:
-        // 1. 离线是红色 (Offline + Paired)
-        // 2. 已配对是橙色 (Wait, user said "已配对是橙色"? No, user said "已配对是橙色" in the prompt "2. 已配对是橙色" but usually Unpaired is orange.
-        // Let's re-read the user prompt: "2. 已配对是橙色".
+        // 1. Offline is red (Offline + Paired)
+        // 2. Paired is orange (Wait, user said "Paired is orange"? No, user said "Paired is orange" in the prompt "2. Paired is orange" but usually Unpaired is orange.
+        // Let's re-read the user prompt: "2. Paired is orange".
         // BUT HostCell.m says:
         // if (self.host.pairState == PairStateUnpaired) { statusColor = [NSColor systemOrangeColor]; } // This is ONLINE + UNPAIRED
-        // User might have meant "Unpaired is orange". "已配对" means "Paired". "未配对" means "Unpaired".
-        // The user said: "2. 已配对是橙色" (Paired is orange). This contradicts standard Moonlight logic (Green is connected/paired).
-        // However, looking at the plan: "在线未配对=橙色".
+        // User might have meant "Unpaired is orange". "Paired" means "Paired". "Unpaired" means "Unpaired".
+        // The user said: "2. Paired is orange" (Paired is orange). This contradicts standard Moonlight logic (Green is connected/paired).
+        // However, looking at the plan: "Online unpaired = orange".
         // Let's look at the user's prompt again carefully.
-        // "1. 离线是红色"
-        // "2. 已配对是橙色"
-        // "3. 在线是绿色"
-        // "4. 远控中是绿色+绿色播放按钮"
+        // "1. Offline is red"
+        // "2. Paired is orange"
+        // "3. Online is green"
+        // "4. Streaming is green with a green play button"
 
         // This is slightly confusing. "Online" implies Paired usually in user's mind if they just say "Online is Green".
-        // "已配对是橙色" (Paired is Orange) - this is very weird. Usually Orange is for "Ready to pair" (Unpaired).
+        // "Paired is orange" (Paired is Orange) - this is very weird. Usually Orange is for "Ready to pair" (Unpaired).
         // Let's trust the Plan which analyzed HostCell.m:
-        // "在线未配对=橙色" (Online Unpaired = Orange)
-        // "在线已配对=绿色" (Online Paired = Green)
+        // "Online unpaired = orange" (Online Unpaired = Orange)
+        // "Online paired = green" (Online Paired = Green)
         // I will follow the Plan and HostCell.m logic, assuming the user might have misspoken or meant "Detected but not paired".
 
         if isStreaming { return .green }
