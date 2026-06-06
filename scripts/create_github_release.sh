@@ -61,12 +61,16 @@ hdiutil create \
   -format UDZO \
   "$dmg_path"
 
-if ! git rev-parse "$tag" >/dev/null 2>&1; then
-  git tag "$tag"
-fi
-
 git push origin HEAD
-git push origin "$tag"
+
+if git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null 2>&1; then
+  echo "Remote tag already exists: $tag"
+elif git rev-parse "$tag" >/dev/null 2>&1; then
+  git push origin "$tag"
+else
+  git tag "$tag"
+  git push origin "$tag"
+fi
 
 if gh release view "$tag" >/dev/null 2>&1; then
   gh release upload "$tag" "$dmg_path" --clobber
