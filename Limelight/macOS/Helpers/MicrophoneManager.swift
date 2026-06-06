@@ -802,10 +802,6 @@ final class AwdlHelperManager: NSObject, ObservableObject {
             return .unavailable
         }
 
-        guard !isSandboxedBuild else {
-            return .adminPromptOnly
-        }
-
         guard MLAwdlAuthorizationHelper.bundledPrivilegedHelperAvailable() else {
             return .adminPromptOnly
         }
@@ -863,7 +859,7 @@ final class AwdlHelperManager: NSObject, ObservableObject {
     func refreshAuthorizationStatus() {
         sessionQueue.async {
             let state = self.queryAwdlInterfaceState()
-            let canInstallPersistentHelper = !self.isSandboxedBuild && MLAwdlAuthorizationHelper.bundledPrivilegedHelperAvailable()
+            let canInstallPersistentHelper = MLAwdlAuthorizationHelper.bundledPrivilegedHelperAvailable()
             let installState = self.currentHelperInstallStateLocked(interfacePresent: state.present)
             if state.present && state.up && self.pendingRestoreRequired {
                 self.pendingRestoreRequired = false
@@ -1023,7 +1019,7 @@ final class AwdlHelperManager: NSObject, ObservableObject {
 
     private func performAuthorizationProbe() -> (state: AwdlHelperAuthorizationState, message: String) {
         let state = queryAwdlInterfaceState()
-        publishPersistentHelperSupport(!isSandboxedBuild && MLAwdlAuthorizationHelper.bundledPrivilegedHelperAvailable())
+        publishPersistentHelperSupport(MLAwdlAuthorizationHelper.bundledPrivilegedHelperAvailable())
         publishHelperInstallState(currentHelperInstallStateLocked(interfacePresent: state.present))
         guard state.present else {
             return (.unavailable, "")
@@ -1048,15 +1044,10 @@ final class AwdlHelperManager: NSObject, ObservableObject {
 
     private func performPersistentHelperInstall() -> (state: AwdlHelperAuthorizationState, message: String) {
         let interfaceState = queryAwdlInterfaceState()
-        publishPersistentHelperSupport(!isSandboxedBuild && MLAwdlAuthorizationHelper.bundledPrivilegedHelperAvailable())
+        publishPersistentHelperSupport(MLAwdlAuthorizationHelper.bundledPrivilegedHelperAvailable())
         guard interfaceState.present else {
             publishHelperInstallState(.unavailable)
             return (.unavailable, "")
-        }
-
-        guard !isSandboxedBuild else {
-            publishHelperInstallState(.adminPromptOnly)
-            return (.failed, "Persistent helper installation is unavailable in this sandboxed build.")
         }
 
         let bundledHelperPath = Self.bundledHelperPath()
@@ -1070,43 +1061,14 @@ final class AwdlHelperManager: NSObject, ObservableObject {
             return (.failed, "The bundled AWDL helper in this build is not signed in a way macOS accepts for persistent installation.")
         }
 
-        let label = Self.helperLabel()
-        let tempDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
-        let tempPlistURL = tempDirectory.appendingPathComponent("\(label).plist")
-        let tempScriptURL = tempDirectory.appendingPathComponent("install-awdl-helper.sh")
-
-        do {
-            try FileManager.default.createDirectory(at: tempDirectory, withIntermediateDirectories: true)
-            try makeLaunchdPlist(label: label).write(to: tempPlistURL, options: .atomic)
-            try makeInstallScript().write(to: tempScriptURL, atomically: true, encoding: .utf8)
-            try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: tempScriptURL.path)
-        } catch {
+        var errorMessage: NSString?
+        let prompt = awdlAuthorizationPrompt()
+        logInfo("[diag] AWDL persistent helper install requesting SMJobBless authorization")
+        guard MLAwdlAuthorizationHelper.prepareSession(withPrompt: prompt, errorMessage: &errorMessage) else {
             publishHelperInstallState(.notReady)
-            return (.failed, error.localizedDescription)
+            return (.failed, normalizedAuthorizationError((errorMessage as String?) ?? "Authorization failed."))
         }
 
-        defer {
-            try? FileManager.default.removeItem(at: tempDirectory)
-        }
-
-        let command = [
-            "/bin/sh",
-            shellQuote(tempScriptURL.path),
-            shellQuote(bundledHelperPath),
-            shellQuote(Self.installedHelperPath()),
-            shellQuote(tempPlistURL.path),
-            shellQuote(Self.installedLaunchdPlistPath()),
-            shellQuote(label),
-        ].joined(separator: " ")
-
-        logInfo("[diag] AWDL persistent helper install requesting administrator command")
-
-        if let error = runAdministratorShellCommand(command) {
-            publishHelperInstallState(.notReady)
-            return (.failed, normalizedAuthorizationError(error))
-        }
-
-        MLAwdlAuthorizationHelper.invalidateSession()
         if MLAwdlAuthorizationHelper.privilegedHelperInstalled() {
             publishHelperInstallState(.installed)
             publishExecutionPath(.privilegedHelper)
@@ -1439,43 +1401,23 @@ final class AwdlHelperManager: NSObject, ObservableObject {
         let command = "/sbin/ifconfig awdl0 \(argument)"
         logInfo("[diag] AWDL helper requesting privileged command: \(command)")
 
-        if !isSandboxedBuild {
-            let hasBundledHelper = MLAwdlAuthorizationHelper.bundledPrivilegedHelperAvailable()
-            let persistentHelperInstalled =
-                MLAwdlAuthorizationHelper.installedPrivilegedHelperHasUsableSignature() &&
-                MLAwdlAuthorizationHelper.privilegedHelperLaunchdJobLoaded()
-            if let helperError = runPrivilegedIfconfigViaAuthorizationHelper(argument) {
-                logWarning("[diag] AWDL privileged helper request failed: \(helperError)")
-                publishHelperInstallState(
-                    persistentHelperInstalled ? .installed : (hasBundledHelper ? .notReady : .adminPromptOnly)
-                )
-                if persistentHelperInstalled {
-                    logWarning("[diag] AWDL helper is already installed; skipping administrator fallback for this stream")
-                    publishExecutionPath(.privilegedHelper)
-                    return helperError
-                }
-                if hasBundledHelper {
-                    logInfo("[diag] AWDL helper falling back to administrator command prompt")
-                    if let fallbackError = runPrivilegedIfconfigViaAppleScript(argument) {
-                        publishExecutionPath(.administratorPrompt)
-                        return fallbackError
-                    }
-                    publishExecutionPath(.administratorPrompt)
-                    return nil
-                }
-                publishExecutionPath(.administratorPrompt)
-                return helperError
-            }
-            logInfo("[diag] AWDL privileged helper request succeeded")
-            publishHelperInstallState(.installed)
-            publishExecutionPath(.privilegedHelper)
-            return nil
+        let hasBundledHelper = MLAwdlAuthorizationHelper.bundledPrivilegedHelperAvailable()
+        let persistentHelperInstalled =
+            MLAwdlAuthorizationHelper.installedPrivilegedHelperHasUsableSignature() &&
+            MLAwdlAuthorizationHelper.privilegedHelperLaunchdJobLoaded()
+        if let helperError = runPrivilegedIfconfigViaAuthorizationHelper(argument) {
+            logWarning("[diag] AWDL privileged helper request failed: \(helperError)")
+            publishHelperInstallState(
+                persistentHelperInstalled ? .installed : (hasBundledHelper ? .notReady : .adminPromptOnly)
+            )
+            publishExecutionPath(hasBundledHelper ? .privilegedHelper : .administratorPrompt)
+            return helperError
         }
 
-        let result = runPrivilegedIfconfigViaAppleScript(argument)
-        publishHelperInstallState(.adminPromptOnly)
-        publishExecutionPath(.administratorPrompt)
-        return result
+        logInfo("[diag] AWDL privileged helper request succeeded")
+        publishHelperInstallState(.installed)
+        publishExecutionPath(.privilegedHelper)
+        return nil
     }
 
     private static func escapeForAppleScript(_ command: String) -> String {

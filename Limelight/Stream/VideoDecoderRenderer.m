@@ -329,9 +329,7 @@ static MLHDRTransferMode MLResolveHDRTransferMode(BOOL hdrEnabled, NSInteger hdr
             return MLHDRTransferModeHLG;
         case 0:
         default:
-            return MLHDRTransferColorSpaceSupported(MLHDRTransferModeHLG)
-                ? MLHDRTransferModeHLG
-                : MLHDRTransferModePQ;
+            return MLHDRTransferModePQ;
     }
 }
 
