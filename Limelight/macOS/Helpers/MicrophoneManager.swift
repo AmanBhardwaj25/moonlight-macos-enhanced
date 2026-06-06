@@ -1410,6 +1410,15 @@ final class AwdlHelperManager: NSObject, ObservableObject {
             publishHelperInstallState(
                 persistentHelperInstalled ? .installed : (hasBundledHelper ? .notReady : .adminPromptOnly)
             )
+            if !isSandboxedBuild && !persistentHelperInstalled {
+                logInfo("[diag] AWDL helper falling back to administrator command prompt")
+                if let fallbackError = runPrivilegedIfconfigViaAppleScript(argument) {
+                    publishExecutionPath(.administratorPrompt)
+                    return fallbackError
+                }
+                publishExecutionPath(.administratorPrompt)
+                return nil
+            }
             publishExecutionPath(hasBundledHelper ? .privilegedHelper : .administratorPrompt)
             return helperError
         }
