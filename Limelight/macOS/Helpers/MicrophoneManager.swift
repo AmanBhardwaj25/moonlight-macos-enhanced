@@ -733,10 +733,12 @@ final class AwdlHelperManager: NSObject, ObservableObject {
     private static let pendingRestoreKey = "networkCompatibility.awdlHelperPendingRestore"
     private static let helperSuffix = ".AwdlPrivilegedHelper"
     private static let helperFallbackLabel = "std.skyhua.MoonlightMac.AwdlPrivilegedHelper"
+    private static let keepDownIntervalSeconds: TimeInterval = 1.0
 
     private let sessionQueue = DispatchQueue(label: "moonlight.awdl.helper")
     private let isSandboxedBuild = AwdlHelperManager.detectSandboxedBuild()
     private var appWillTerminateObserver: NSObjectProtocol?
+    private var awdlKeepDownWorkItem: DispatchWorkItem?
     private var sessionGeneration: UInt = 0
     private var sessionEnabled = false
     private var interfacePresent = false
@@ -861,7 +863,7 @@ final class AwdlHelperManager: NSObject, ObservableObject {
             let state = self.queryAwdlInterfaceState()
             let canInstallPersistentHelper = MLAwdlAuthorizationHelper.bundledPrivilegedHelperAvailable()
             let installState = self.currentHelperInstallStateLocked(interfacePresent: state.present)
-            if state.present && state.up && self.pendingRestoreRequired {
+            if !self.sessionEnabled && state.present && state.up && self.pendingRestoreRequired {
                 self.pendingRestoreRequired = false
             }
             DispatchQueue.main.async {
@@ -975,6 +977,7 @@ final class AwdlHelperManager: NSObject, ObservableObject {
                     self.originalInterfaceUp = true
                     self.changedInterfaceState = true
                     self.logWarning("[diag] AWDL helper found pending restore from a previous unfinished stream; keeping awdl0 down for generation=\(generation)")
+                    self.scheduleAwdlKeepDownLocked(generation: generation)
                     DispatchQueue.main.async {
                         self.updateAuthorizationState(.ready, message: "")
                     }
@@ -984,6 +987,7 @@ final class AwdlHelperManager: NSObject, ObservableObject {
 
             if !self.originalInterfaceUp {
                 self.logInfo("[diag] AWDL helper found awdl0 already down for generation=\(generation)")
+                self.scheduleAwdlKeepDownLocked(generation: generation)
                 DispatchQueue.main.async {
                     self.updateAuthorizationState(.ready, message: "")
                 }
@@ -1000,6 +1004,7 @@ final class AwdlHelperManager: NSObject, ObservableObject {
 
             self.changedInterfaceState = true
             self.pendingRestoreRequired = true
+            self.scheduleAwdlKeepDownLocked(generation: generation)
             let changedState = self.queryAwdlInterfaceState()
             self.logInfo("[diag] AWDL helper activated for generation=\(generation)")
             self.logInfo("[diag] AWDL helper post-activation state: present=\(changedState.present ? 1 : 0) up=\(changedState.up ? 1 : 0)")
@@ -1436,11 +1441,60 @@ final class AwdlHelperManager: NSObject, ObservableObject {
     }
 
     private func resetSessionStateLocked() {
+        cancelAwdlKeepDownLocked()
         sessionEnabled = false
         interfacePresent = false
         originalInterfaceUp = false
         changedInterfaceState = false
         sessionGeneration = 0
+    }
+
+    private func cancelAwdlKeepDownLocked() {
+        awdlKeepDownWorkItem?.cancel()
+        awdlKeepDownWorkItem = nil
+    }
+
+    private func scheduleAwdlKeepDownLocked(generation: UInt) {
+        cancelAwdlKeepDownLocked()
+
+        let workItem = DispatchWorkItem { [weak self] in
+            self?.enforceAwdlDownLocked(generation: generation)
+        }
+        awdlKeepDownWorkItem = workItem
+        sessionQueue.asyncAfter(deadline: .now() + Self.keepDownIntervalSeconds, execute: workItem)
+    }
+
+    private func enforceAwdlDownLocked(generation: UInt) {
+        guard sessionEnabled, sessionGeneration == generation, interfacePresent else {
+            return
+        }
+
+        let state = queryAwdlInterfaceState()
+        guard state.present else {
+            logWarning("[diag] AWDL helper keep-down stopped because awdl0 disappeared for generation=\(generation)")
+            DispatchQueue.main.async {
+                self.updateAuthorizationState(.unavailable, message: "")
+            }
+            return
+        }
+
+        if state.up {
+            logInfo("[diag] AWDL helper keep-down detected awdl0 up for generation=\(generation); disabling again")
+            if let errorMessage = runPrivilegedIfconfigArgument("down") {
+                logWarning("[diag] AWDL helper keep-down failed for generation=\(generation) error=\(errorMessage)")
+                DispatchQueue.main.async {
+                    self.updateAuthorizationState(.failed, message: errorMessage)
+                }
+                return
+            }
+
+            changedInterfaceState = true
+            if originalInterfaceUp {
+                pendingRestoreRequired = true
+            }
+        }
+
+        scheduleAwdlKeepDownLocked(generation: generation)
     }
 
     private func restoreIfNeededLocked(reason: String) {
